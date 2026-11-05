@@ -7,6 +7,7 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/discover/:path*",
+    "/books/:path*",
     "/activity/:path*",
     "/community/:path*",
     "/messages/:path*",

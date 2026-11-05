@@ -15,3 +15,6 @@ next-env.d.ts
 # logs
 npm-debug.log*
 .DS_Store
+
+# uploaded book photos (local development storage)
+public/uploads/

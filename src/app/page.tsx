@@ -25,7 +25,7 @@ export default async function Home() {
         <Doodle kind="cup" className="bottom-24 left-[46%] hidden w-11 lg:block" color="#9a6b4a" fill="var(--peach)" rotate={6} animation="wiggle" delay={400} />
         <Doodle kind="star" className="right-[6%] top-12 w-7 sm:w-9" color="#c99a1e" fill="var(--butter)" animation="twinkle" delay={800} />
         <Doodle kind="squiggle" className="bottom-6 right-[16%] hidden w-24 lg:block" color="var(--accent)" animation="drift" />
-        <Doodle kind="heart" className="bottom-24 right-[4%] w-7 sm:w-8" color="#d1607a" fill="var(--rose)" animation="float" delay={300} />
+        <Doodle kind="heart" className="bottom-24 right-[4%] w-7 sm:w-8" color="var(--accent)" fill="var(--rose)" animation="float" delay={300} />
       </div>
 
       {/* Shelves on mint */}
@@ -41,7 +41,7 @@ export default async function Home() {
       {/* Ways to share on cream */}
       <div className="relative py-10 sm:py-12">
         <Doodle kind="leaf" className="left-[2%] top-4 hidden w-10 xl:block" color="var(--brand)" fill="var(--mint)" rotate={-20} animation="drift" />
-        <Doodle kind="heart" className="right-[3%] top-6 hidden w-7 xl:block" color="#d1607a" fill="var(--rose)" animation="float" delay={600} />
+        <Doodle kind="heart" className="right-[3%] top-6 hidden w-7 xl:block" color="var(--accent)" fill="var(--rose)" animation="float" delay={600} />
         <Doodle kind="sparkle" className="bottom-4 right-[30%] hidden w-6 sm:block" color="var(--accent)" fill="var(--peach)" animation="twinkle" />
         <WaysToShare />
       </div>
@@ -49,9 +49,9 @@ export default async function Home() {
       {/* How it works on lavender */}
       <WaveDivider color="var(--lavender)" />
       <div className="relative bg-lavender py-8 sm:py-10">
-        <Doodle kind="plane" className="right-[6%] top-8 w-12 sm:w-16" color="#6c5ccf" fill="#fff" rotate={-6} animation="drift" />
-        <Doodle kind="star" className="bottom-10 left-[3%] w-7 sm:w-9" color="#6c5ccf" fill="var(--butter)" animation="twinkle" delay={300} />
-        <Doodle kind="squiggle" className="bottom-6 right-[20%] hidden w-20 md:block" color="#6c5ccf" animation="drift" delay={900} />
+        <Doodle kind="plane" className="right-[6%] top-8 w-12 sm:w-16" color="var(--brand)" fill="#fff" rotate={-6} animation="drift" />
+        <Doodle kind="star" className="bottom-10 left-[3%] w-7 sm:w-9" color="var(--brand)" fill="var(--butter)" animation="twinkle" delay={300} />
+        <Doodle kind="squiggle" className="bottom-6 right-[20%] hidden w-20 md:block" color="var(--brand)" animation="drift" delay={900} />
         <HowItWorks />
       </div>
       <WaveDivider color="var(--lavender)" flip />

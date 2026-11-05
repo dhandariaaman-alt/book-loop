@@ -8,8 +8,6 @@ import { Icon, PageHeader, SectionTitle, StatTile, TINT_BG, deep, type IconKind,
 
 export const metadata: Metadata = { title: "Home" };
 
-const SOON = "Coming in Phase 2";
-
 const PILL =
   "inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-medium text-fg transition hover:-translate-y-0.5 hover:shadow-sm";
 
@@ -147,7 +145,7 @@ export default async function DashboardPage() {
 
       <Reveal delay={80}>
         <nav aria-label="Quick actions" className="mt-8 flex flex-wrap gap-2">
-          <span className="btn-primary cursor-not-allowed opacity-60" title={SOON}>+ List a book</span>
+          <Link href="/books/new" className="btn-primary">+ List a book</Link>
           <Link href="/discover" className={`${PILL} bg-peach`}>Find a book</Link>
           <Link href="/activity" className={`${PILL} bg-lavender`}>View requests</Link>
         </nav>

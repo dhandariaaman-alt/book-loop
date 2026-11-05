@@ -14,6 +14,9 @@ export const TYPE_PILL: Record<string, string> = {
 
 const NEUTRAL = "bg-surface-2";
 
+/** Tints for drawn cover placeholders when a listing has no photo. */
+export const PLACEHOLDER_TINTS = ["bg-peach", "bg-sky", "bg-mint", "bg-lavender", "bg-butter", "bg-rose"];
+
 export const REQUEST_STATUS: Record<string, { label: string; pill: string }> = {
   PENDING: { label: "Pending", pill: "bg-butter" },
   ACCEPTED: { label: "Accepted", pill: "bg-mint" },

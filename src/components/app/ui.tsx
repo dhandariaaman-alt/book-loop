@@ -2,6 +2,7 @@
 // (Home, Discover, Activity, Community, Messages) looks consistent.
 
 import "@fontsource/caveat/latin-500.css";
+import { CountUp } from "./count-up";
 
 export type Tint = "mint" | "peach" | "lavender" | "sky" | "butter" | "rose";
 
@@ -106,7 +107,7 @@ export function SectionTitle({ children, action }: { children: React.ReactNode; 
   );
 }
 
-/** White card with a pastel header strip and an icon chip. */
+/** Card with a calm header: thin tinted rule on top, neutral header below. */
 export function Panel({
   title,
   children,
@@ -122,9 +123,15 @@ export function Panel({
 }) {
   return (
     <section className="card overflow-hidden" aria-label={title}>
-      <div className={`flex items-center justify-between gap-2 border-b border-border px-5 py-3 ${TINT_BG[tint]}`}>
+      <div
+        className="flex items-center justify-between gap-2 border-b border-border px-5 py-3"
+        style={{
+          borderTop: `2px solid ${deep(tint)}`,
+          background: `color-mix(in srgb, var(--${tint}) 35%, var(--surface))`,
+        }}
+      >
         <div className="flex items-center gap-2.5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface p-1.5 text-brand">
+          <span className={`flex h-8 w-8 items-center justify-center rounded-lg p-1.5 text-brand ${TINT_BG[tint]}`}>
             <Icon kind={icon} />
           </span>
           <h3 className="heading font-semibold">{title}</h3>
@@ -139,8 +146,8 @@ export function Panel({
 /** Friendly dashed empty state. */
 export function EmptyState({ children, icon = "book" }: { children: React.ReactNode; icon?: IconKind }) {
   return (
-    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-surface-2 px-4 py-6 text-center text-sm text-muted">
-      <span className="h-8 w-8 text-brand/70">
+    <div className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border bg-surface-2/70 px-4 py-6 text-center text-sm text-muted">
+      <span className="animate-gentle-float h-8 w-8 text-brand/70">
         <Icon kind={icon} />
       </span>
       <div>{children}</div>
@@ -148,20 +155,21 @@ export function EmptyState({ children, icon = "book" }: { children: React.ReactN
   );
 }
 
-/** Pastel index-card style number tile. */
-export function StatTile({ label, value, tint, tilt = 0 }: { label: string; value: React.ReactNode; tint: Tint; tilt?: number }) {
+/**
+ * Index-card style number tile. `tilt` is accepted for backward
+ * compatibility but ignored: tiles sit straight for a calmer grid.
+ */
+export function StatTile({ label, value, tint }: { label: string; value: React.ReactNode; tint: Tint; tilt?: number }) {
   return (
-    <div
-      className={`relative overflow-hidden rounded-2xl border border-border p-4 pt-5 shadow-sm ${TINT_BG[tint]}`}
-      style={{ rotate: `${tilt}deg` }}
-    >
-      <span className="absolute inset-x-0 top-0 h-1.5" style={{ background: deep(tint) }} aria-hidden="true" />
-      <div className="heading text-4xl font-semibold leading-none">{value}</div>
+    <div className={`relative overflow-hidden rounded-2xl border border-border p-4 pt-5 ${TINT_BG[tint]}`}>
+      <span className="absolute inset-x-0 top-0 h-1" style={{ background: deep(tint) }} aria-hidden="true" />
+      <div className="heading text-4xl font-semibold leading-none">
+        {typeof value === "number" ? <CountUp value={value} /> : value}
+      </div>
       <div className="mt-2 text-xs text-fg/70">{label}</div>
     </div>
   );
 }
-
 /** Small "coming in Phase N" pill. */
 export function SoonBadge({ phase }: { phase: number }) {
   return (

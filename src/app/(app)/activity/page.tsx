@@ -3,8 +3,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { Reveal } from "@/components/landing/reveal";
-import { EmptyState, PageHeader, Panel, SoonBadge, StatTile } from "@/components/app/ui";
-import { LISTING_STATUS, REQUEST_STATUS, TX_STATUS, TYPE_LABEL, TYPE_PILL, relativeDate, shortDate } from "./labels";
+import { EmptyState, PageHeader, Panel, StatTile } from "@/components/app/ui";
+import { STATUS_LABEL, formatPrice, myListings } from "@/lib/listings";
+import { LISTING_STATUS, PLACEHOLDER_TINTS, REQUEST_STATUS, TX_STATUS, TYPE_LABEL, TYPE_PILL, relativeDate, shortDate } from "./labels";
 
 export const metadata: Metadata = { title: "My activity" };
 
@@ -27,7 +28,7 @@ function Pill({ className, children }: { className: string; children: React.Reac
   );
 }
 
-export default async function ActivityPage({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+export default async function ActivityPage({ searchParams }: { searchParams: Promise<{ tab?: string; removed?: string }> }) {
   const user = await requireUser();
   const sp = await searchParams;
   const tab: Tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "requests";
@@ -183,43 +184,75 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
       </div>
     );
   } else if (tab === "books") {
-    const listings = await prisma.bookListing.findMany({
-      where: myBooksWhere,
-      orderBy: { createdAt: "desc" },
-      take: 60,
-      include: { book: bookSel },
-    });
+    const listings = await myListings(user.id);
     content = (
-      <Panel
-        title="My books"
-        tint="butter"
-        icon="book"
-        action={
-          <span className="flex items-center gap-2">
-            <button type="button" disabled className="btn-primary cursor-not-allowed text-sm opacity-60">
-              + List a book
-            </button>
-            <SoonBadge phase={2} />
-          </span>
-        }
-      >
-        {listings.length === 0 ? (
-          <EmptyState icon="book">Your shelf is empty. Listing books arrives in Phase 2.</EmptyState>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {listings.map((l) => (
-              <li key={l.id} className="min-w-0 rounded-xl border border-border bg-surface-2 p-4">
-                <p className="heading truncate font-semibold">{l.book.title}</p>
-                <p className="truncate text-sm text-muted">{l.book.author}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <Pill className={TYPE_PILL[l.type]}>{TYPE_LABEL[l.type]}</Pill>
-                  <Pill className={LISTING_STATUS[l.status].pill}>{LISTING_STATUS[l.status].label}</Pill>
-                </div>
-              </li>
-            ))}
-          </ul>
+      <div className="space-y-4">
+        {sp.removed === "1" && (
+          <p role="status" className="rounded-lg bg-success-soft px-3 py-2.5 text-sm text-success">
+            Listing removed.
+          </p>
         )}
-      </Panel>
+        <Panel
+          title="My books"
+          tint="butter"
+          icon="book"
+          action={
+            <Link href="/books/new" className="btn-primary text-sm">
+              + List a book
+            </Link>
+          }
+        >
+          {listings.length === 0 ? (
+            <EmptyState icon="book">
+              Your shelf is empty. List a book and a neighbour can borrow, swap or buy it.
+            </EmptyState>
+          ) : (
+            <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
+              {listings.map((l, i) => {
+                const price = l.type === "SALE" ? formatPrice(l.pricePaise) : null;
+                return (
+                  <li key={l.id} className="group relative flex min-w-0 flex-col">
+                    <Link href={`/books/${l.id}`} className="flex min-w-0 flex-1 flex-col rounded-xl focus-visible:outline-2 focus-visible:outline-offset-4">
+                      {l.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={l.imageUrl}
+                          alt={`Cover of ${l.title}`}
+                          loading="lazy"
+                          className="aspect-[2/3] w-full rounded-l-sm rounded-r-md object-cover shadow-md transition group-hover:-translate-y-0.5"
+                        />
+                      ) : (
+                        <span
+                          aria-hidden="true"
+                          className={`relative flex aspect-[2/3] w-full flex-col justify-between overflow-hidden rounded-l-sm rounded-r-md border border-border p-3 shadow-md transition group-hover:-translate-y-0.5 ${PLACEHOLDER_TINTS[i % PLACEHOLDER_TINTS.length]}`}
+                        >
+                          <span className="absolute inset-y-0 left-0 w-2 bg-fg/10" />
+                          <span className="heading line-clamp-4 pl-1 text-base font-semibold leading-snug">{l.title}</span>
+                          <span className="font-hand line-clamp-2 pl-1 text-lg leading-tight text-fg/70">{l.author}</span>
+                        </span>
+                      )}
+                      <span className="mt-2 block truncate font-semibold heading">{l.title}</span>
+                      <span className="block truncate text-sm text-muted">{l.author}</span>
+                    </Link>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <Pill className={TYPE_PILL[l.type]}>{TYPE_LABEL[l.type]}</Pill>
+                      <Pill className={LISTING_STATUS[l.status]?.pill ?? "bg-surface-2"}>{STATUS_LABEL[l.status]}</Pill>
+                      {price && <span className="text-sm font-semibold">{price}</span>}
+                    </div>
+                    <Link
+                      href={`/books/${l.id}/edit`}
+                      className="mt-1.5 self-start text-xs text-muted underline underline-offset-2 hover:text-brand"
+                      aria-label={`Edit ${l.title}`}
+                    >
+                      Edit
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </Panel>
+      </div>
     );
   } else {
     const history = await prisma.transaction.findMany({

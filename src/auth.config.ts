@@ -6,6 +6,7 @@ import type { NextAuthConfig } from "next-auth";
 const PRIVATE_PREFIXES = [
   "/dashboard",
   "/discover",
+  "/books",
   "/activity",
   "/community",
   "/messages",

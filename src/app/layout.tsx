@@ -5,7 +5,7 @@ import { PageBackdrop } from "@/components/page-backdrop";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "BookLoop — share books with your neighbours", template: "%s · BookLoop" },
+  title: { default: "BookLoop: share books with your neighbours", template: "%s · BookLoop" },
   description: "Borrow, exchange, give away and donate books within your local community.",
 };
 

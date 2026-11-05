@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/avatar";
 import { Doodle } from "@/components/landing/decorations";
+import { DrawnCover } from "@/components/listings/listing-card";
 import "@fontsource/caveat/latin-500.css";
 
 type Params = { params: Promise<{ username: string }> };
@@ -45,7 +46,12 @@ export default async function PublicProfilePage({ params }: Params) {
         where: { status: "AVAILABLE" },
         orderBy: { createdAt: "desc" },
         take: 12,
-        select: { id: true, type: true, book: { select: { title: true, author: true } } },
+        select: {
+          id: true,
+          type: true,
+          book: { select: { title: true, author: true } },
+          images: { orderBy: { position: "asc" }, take: 1, select: { url: true } },
+        },
       },
     },
   });
@@ -114,7 +120,7 @@ export default async function PublicProfilePage({ params }: Params) {
 
       <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Rating", value: rating._count ? `★ ${rating._avg.rating?.toFixed(1)}` : "—", sub: `${rating._count} reviews` },
+          { label: "Rating", value: rating._count ? `★ ${rating._avg.rating?.toFixed(1)}` : "New", sub: rating._count ? `${rating._count} reviews` : "no reviews yet" },
           { label: "Books listed", value: user._count.listings },
           { label: "Borrowed / exchanged", value: borrowedOrExchanged },
           { label: "Completed", value: completed, sub: "transactions" },
@@ -134,10 +140,25 @@ export default async function PublicProfilePage({ params }: Params) {
         ) : (
           <ul className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {user.listings.map((l) => (
-              <li key={l.id} className="card p-4">
-                <span className="text-xs font-medium text-accent">{TYPE_LABEL[l.type]}</span>
-                <p className="mt-1 font-medium">{l.book.title}</p>
-                <p className="text-sm text-muted">{l.book.author}</p>
+              <li key={l.id} className="min-w-0">
+                <Link
+                  href={`/books/${l.id}`}
+                  className="card flex h-full gap-3 p-3 transition-[transform,box-shadow] hover:shadow-md motion-safe:hover:-translate-y-0.5 motion-safe:active:scale-[.98]"
+                >
+                  <div className="aspect-[2/3] w-16 shrink-0 overflow-hidden rounded-l-[3px] rounded-r-md shadow-[inset_3px_0_0_rgba(0,0,0,0.08),1px_2px_6px_rgba(0,0,0,0.12)]">
+                    {l.images[0] ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={l.images[0].url} alt={`Cover of ${l.book.title}`} loading="lazy" className="h-full w-full object-cover" />
+                    ) : (
+                      <DrawnCover title={l.book.title} author="" className="!p-1.5 [&_p]:!text-[10px]" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-xs font-medium text-accent">{TYPE_LABEL[l.type]}</span>
+                    <p className="mt-1 line-clamp-2 font-medium">{l.book.title}</p>
+                    <p className="truncate text-sm text-muted">{l.book.author}</p>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
