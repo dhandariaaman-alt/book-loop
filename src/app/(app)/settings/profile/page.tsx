@@ -38,7 +38,7 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
   const p = user.profile;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10">
+    <div className="max-w-3xl">
       {welcome && (
         <div className="card relative mb-6 border-brand/20 bg-mint p-5 text-brand md:pr-20">
           <Doodle kind="sparkle" className="right-5 top-3 hidden w-10 md:block" color="var(--brand)" fill="var(--butter)" animation="wiggle" />

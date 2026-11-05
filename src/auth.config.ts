@@ -3,7 +3,17 @@ import type { NextAuthConfig } from "next-auth";
 // Edge-safe settings shared by middleware and the full auth setup in auth.ts.
 // No database access here.
 
-const PRIVATE_PREFIXES = ["/dashboard", "/settings", "/admin", "/moderator", "/institution"];
+const PRIVATE_PREFIXES = [
+  "/dashboard",
+  "/discover",
+  "/activity",
+  "/community",
+  "/messages",
+  "/settings",
+  "/admin",
+  "/moderator",
+  "/institution",
+];
 
 export default {
   pages: { signIn: "/login", error: "/login" },

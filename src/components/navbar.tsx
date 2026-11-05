@@ -16,7 +16,7 @@ export async function Navbar() {
           {user ? (
             <>
               <Link href="/dashboard" className="btn-ghost hidden sm:inline-flex">
-                Dashboard
+                Home
               </Link>
               {user.role === "ADMIN" && (
                 <Link href="/admin" className="btn-ghost hidden sm:inline-flex">
@@ -37,7 +37,7 @@ export async function Navbar() {
                   </div>
                   <hr className="my-1 border-border" />
                   <Link href="/dashboard" className="block rounded-md px-3 py-2 text-sm hover:bg-surface-2 sm:hidden">
-                    Dashboard
+                    Home
                   </Link>
                   <Link href={`/u/${user.username}`} className="block rounded-md px-3 py-2 text-sm hover:bg-surface-2">
                     View my profile
