@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/session";
 import { Avatar } from "@/components/avatar";
 import { ProfileForm } from "./profile-form";
 import { LocationCard } from "./location-card";
+import { Doodle } from "@/components/landing/decorations";
 
 export const metadata: Metadata = { title: "Edit profile" };
 
@@ -39,16 +40,19 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
   return (
     <div className="mx-auto max-w-3xl px-4 py-10">
       {welcome && (
-        <div className="mb-6 rounded-2xl bg-brand-soft p-5 text-brand">
-          <p className="font-semibold">Welcome to BookLoop, {user.name?.split(" ")[0]}!</p>
+        <div className="card relative mb-6 border-brand/20 bg-mint p-5 text-brand md:pr-20">
+          <Doodle kind="sparkle" className="right-5 top-3 hidden w-10 md:block" color="var(--brand)" fill="var(--butter)" animation="wiggle" />
+          <p className="heading text-xl font-semibold">Welcome to BookLoop, {user.name?.split(" ")[0]}!</p>
           <p className="mt-1 text-sm">Add your neighbourhood and favourite genres so we can show you books nearby.</p>
         </div>
       )}
       <div className="flex items-center gap-4">
-        <Avatar name={user.name} image={user.image} size={64} />
-        <div>
-          <h1 className="heading text-3xl font-semibold">Your profile</h1>
-          <p className="text-sm text-muted">{user.email} · only you can see your email</p>
+        <span className="shrink-0 rounded-full ring-4 ring-peach">
+          <Avatar name={user.name} image={user.image} size={64} />
+        </span>
+        <div className="min-w-0">
+          <h1 className="heading text-3xl font-semibold sm:text-4xl">Your profile</h1>
+          <p className="break-words text-sm text-muted">{user.email} · only you can see your email</p>
         </div>
       </div>
 

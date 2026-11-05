@@ -9,12 +9,21 @@ type Props = {
   initial: { name: string; username: string; bio: string; neighbourhood: string; city: string; genreIds: string[] };
 };
 
+const CHIP_FILLS = [
+  "peer-checked:bg-mint",
+  "peer-checked:bg-peach",
+  "peer-checked:bg-lavender",
+  "peer-checked:bg-sky",
+  "peer-checked:bg-butter",
+  "peer-checked:bg-rose",
+];
+
 export function ProfileForm({ genres, initial }: Props) {
   const [state, action] = useActionState(updateProfileAction, {});
 
   return (
-    <form action={action} className="card space-y-5 p-6">
-      <h2 className="text-lg font-semibold">About you</h2>
+    <form action={action} className="card space-y-5 p-5 sm:p-6 [&_.input:focus]:border-brand [&_.input:focus]:ring-4 [&_.input:focus]:ring-mint">
+      <h2 className="heading text-2xl font-semibold">About you</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className="label">Full name</label>
@@ -63,7 +72,7 @@ export function ProfileForm({ genres, initial }: Props) {
           <p className="text-sm text-muted">No genres yet. Run <code>npm run db:seed</code> to add them.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {genres.map((g) => (
+            {genres.map((g, i) => (
               <label key={g.id} className="cursor-pointer">
                 <input
                   type="checkbox"
@@ -72,7 +81,7 @@ export function ProfileForm({ genres, initial }: Props) {
                   defaultChecked={initial.genreIds.includes(g.id)}
                   className="peer sr-only"
                 />
-                <span className="inline-block rounded-full border border-border px-3 py-1.5 text-sm transition-colors peer-checked:border-brand peer-checked:bg-brand-soft peer-checked:text-brand peer-focus-visible:outline-2 peer-focus-visible:outline-brand">
+                <span className={`inline-block rounded-full border border-border bg-surface px-3 py-1.5 text-sm transition-colors peer-checked:border-brand peer-checked:text-brand ${CHIP_FILLS[i % CHIP_FILLS.length]} peer-focus-visible:outline-2 peer-focus-visible:outline-brand`}>
                   {g.name}
                 </span>
               </label>

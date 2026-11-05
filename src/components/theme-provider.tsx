@@ -1,21 +1,11 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 
-// Pages that always use the light theme, whatever the visitor's setting.
-const LIGHT_ONLY = new Set(["/"]);
-
+// The whole site uses the light, pastel landing-page look.
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const pathname = usePathname();
   return (
-    <NextThemesProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-      forcedTheme={LIGHT_ONLY.has(pathname) ? "light" : undefined}
-    >
+    <NextThemesProvider attribute="class" forcedTheme="light" enableSystem={false} disableTransitionOnChange>
       {children}
     </NextThemesProvider>
   );

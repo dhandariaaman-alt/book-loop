@@ -3,7 +3,6 @@ import { auth } from "@/auth";
 import { signOutAction } from "@/app/actions/auth";
 import { Avatar } from "./avatar";
 import { Logo } from "./logo";
-import { ThemeToggle } from "./theme-toggle";
 
 export async function Navbar() {
   const session = await auth();
@@ -24,7 +23,6 @@ export async function Navbar() {
                   Admin
                 </Link>
               )}
-              <ThemeToggle />
               <details className="relative">
                 <summary
                   className="flex cursor-pointer list-none items-center rounded-full focus-visible:outline-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden"
@@ -57,7 +55,6 @@ export async function Navbar() {
             </>
           ) : (
             <>
-              <ThemeToggle />
               <Link href="/login" className="btn-ghost">
                 Sign in
               </Link>
