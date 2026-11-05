@@ -6,19 +6,19 @@ import { useCallback, useEffect, useRef, useState, type AnimationEvent, type CSS
  * Full-screen opening animation for the landing page.
  *
  * Timeline (ms):
- *   0    – 650   closed book rises in (scale .85 → 1, fade, lift)
- *   600  – 1050  cover swings open around the spine; book slides right so the spread is centred
- *   1000 – 2110  7 page leaves riffle right → left, 110ms apart, 450ms each
- *   2050 – 3000  spread zooms ~7x into the right-hand page
- *   2350 – 3000  overlay fades out, revealing the landing page
+ *   0    – 1100  closed book rises in (scale .85 → 1, fade, lift), then holds so it can be seen
+ *   1600 – 2500  cover swings open around the spine; book slides right so the spread is centred
+ *   2500 – 4880  7 page leaves turn right → left, 280ms apart, 700ms each
+ *   4900 – 6000  spread zooms ~7x into the right-hand page
+ *   5300 – 6000  overlay fades out, revealing the landing page
  */
-export const BOOK_INTRO_DURATION_MS = 3000;
+export const BOOK_INTRO_DURATION_MS = 6000;
 
 const SEEN_KEY = "bookloop:intro-seen";
 const DONE_EVENT = "bookloop:intro-done";
 const LEAVES = 7;
-const LEAF_START = 1000;
-const LEAF_STAGGER = 110;
+const LEAF_START = 2500;
+const LEAF_STAGGER = 280;
 
 // Runs synchronously while the HTML is parsed, before first paint.
 const BOOT_SCRIPT = `(function(){try{var d=document.documentElement,s=false;try{s=!!sessionStorage.getItem(${JSON.stringify(
@@ -35,7 +35,7 @@ html[data-intro="skip"] .book-intro { display: none !important; }
   background-color: #faf8f4;
   background-image: radial-gradient(rgba(28,26,23,.13) 1px, transparent 1.2px);
   background-size: 22px 22px;
-  animation: bi-fade 650ms cubic-bezier(.4,0,1,1) 2350ms both;
+  animation: bi-fade 700ms cubic-bezier(.4,0,1,1) 5300ms both;
   will-change: opacity;
   contain: strict;
 }
@@ -53,17 +53,17 @@ html[data-intro="skip"] .book-intro { display: none !important; }
   width: var(--bi-w);
   aspect-ratio: 3 / 4;
   transform-origin: 100% 50%;
-  animation: bi-zoom 950ms cubic-bezier(.6,0,.3,1) 2050ms both;
+  animation: bi-zoom 1100ms cubic-bezier(.6,0,.3,1) 4900ms both;
   will-change: transform;
 }
 .bi-shift {
   position: absolute; inset: 0;
-  animation: bi-shift 450ms cubic-bezier(.45,.05,.3,1) 600ms both;
+  animation: bi-shift 900ms cubic-bezier(.45,.05,.3,1) 1600ms both;
   will-change: transform;
 }
 .bi-rise {
   position: absolute; inset: 0;
-  animation: bi-rise 650ms cubic-bezier(.2,.8,.2,1) 0ms both;
+  animation: bi-rise 1100ms cubic-bezier(.2,.8,.2,1) 0ms both;
   will-change: transform, opacity;
 }
 .bi-shadow {
@@ -71,7 +71,7 @@ html[data-intro="skip"] .book-intro { display: none !important; }
   border-radius: 50%;
   background: radial-gradient(closest-side, rgba(28,26,23,.28), rgba(28,26,23,0));
   transform-origin: 50% 50%;
-  animation: bi-shadow 450ms cubic-bezier(.45,.05,.3,1) 600ms both;
+  animation: bi-shadow 900ms cubic-bezier(.45,.05,.3,1) 1600ms both;
   will-change: transform;
 }
 
@@ -381,7 +381,7 @@ export function BookIntro() {
                 {Array.from({ length: LEAVES }, (_, i) => {
                   const style = {
                     "--bi-z": `${(LEAVES - i) * 0.4}px`,
-                    "--bi-dur": "450ms",
+                    "--bi-dur": "700ms",
                     "--bi-delay": `${LEAF_START + i * LEAF_STAGGER}ms`,
                   } as CSSProperties;
                   return (
@@ -401,8 +401,8 @@ export function BookIntro() {
                   style={
                     {
                       "--bi-z": `${(LEAVES + 2) * 0.4}px`,
-                      "--bi-dur": "450ms",
-                      "--bi-delay": "600ms",
+                      "--bi-dur": "900ms",
+                      "--bi-delay": "1600ms",
                     } as CSSProperties
                   }
                 >
