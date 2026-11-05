@@ -1,0 +1,749 @@
+// BookLoop database schema
+// Covers every entity in PRD section 14. Phase 1 uses the auth, user and
+// profile models; the rest are ready for later phases.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────── Enums ───────────────────────────────
+
+enum Role {
+  USER
+  INSTITUTION
+  MODERATOR
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+enum ListingType {
+  BORROW
+  EXCHANGE
+  GIVEAWAY
+  SALE
+}
+
+enum BookCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+}
+
+// PRD section 6. Kept separate from TransactionStatus on purpose.
+enum ListingStatus {
+  AVAILABLE
+  REQUEST_PENDING
+  RESERVED
+  HANDED_OVER
+  COMPLETED
+  UNAVAILABLE
+  REMOVED
+}
+
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+enum TransactionStatus {
+  RESERVED
+  HANDED_OVER
+  RETURN_PENDING
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum ReservationStatus {
+  ACTIVE
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+}
+
+enum HandoverMethod {
+  PUBLIC_PLACE
+  INSTITUTION_POINT
+  SELF_ARRANGED_DELIVERY
+  OTHER
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  VOICE
+}
+
+enum NotificationType {
+  REQUEST_RECEIVED
+  REQUEST_ACCEPTED
+  REQUEST_REJECTED
+  EXCHANGE_OFFER
+  RESERVATION_CONFIRMED
+  RESERVATION_EXPIRED
+  NEW_MESSAGE
+  RETURN_REMINDER
+  OVERDUE
+  TRANSACTION_COMPLETED
+  DONATION_UPDATE
+  DISPUTE_UPDATE
+  ACCOUNT
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  SMS
+  PUSH
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum ReportTarget {
+  USER
+  LISTING
+  MESSAGE
+  REVIEW
+}
+
+enum ReportStatus {
+  OPEN
+  UNDER_REVIEW
+  ESCALATED
+  RESOLVED
+  DISMISSED
+}
+
+enum DisputeKind {
+  NO_SHOW
+  FAILED_HANDOVER
+  NOT_RETURNED
+  DAMAGED
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+enum InstitutionType {
+  LIBRARY
+  COMMUNITY_CENTRE
+  SCHOOL
+  OTHER
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum DonationRequestStatus {
+  OPEN
+  FULFILLED
+  CLOSED
+}
+
+enum DonationStatus {
+  PLEDGED
+  SCHEDULED
+  RECEIVED
+  CANCELLED
+}
+
+// ─────────────────────── Auth (Auth.js adapter) ───────────────────────
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  emailVerified DateTime?
+  name          String?
+  image         String?
+  passwordHash  String?
+  username      String        @unique
+  role          Role          @default(USER)
+  status        AccountStatus @default(ACTIVE)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  accounts            Account[]
+  sessions            Session[]
+  passwordResetTokens PasswordResetToken[]
+  profile             Profile?
+  institution         Institution?
+  listings            BookListing[]
+  requestsMade        Request[]           @relation("Requester")
+  transactionsOwned   Transaction[]       @relation("TxOwner")
+  transactionsTaken   Transaction[]       @relation("TxReceiver")
+  conversationsA      Conversation[]      @relation("ConvUserA")
+  conversationsB      Conversation[]      @relation("ConvUserB")
+  messagesSent        Message[]
+  notifications       Notification[]
+  notificationPrefs   NotificationPreference[]
+  pushSubscriptions   PushSubscription[]
+  reviewsGiven        Review[]            @relation("Reviewer")
+  reviewsReceived     Review[]            @relation("Reviewee")
+  reportsMade         Report[]            @relation("Reporter")
+  reportsAgainst      Report[]            @relation("ReportedUser")
+  reportsHandled      Report[]            @relation("ReportHandler")
+  disputesOpened      Dispute[]           @relation("DisputeOpener")
+  disputesResolved    Dispute[]           @relation("DisputeResolver")
+  blocking            Block[]             @relation("Blocker")
+  blockedBy           Block[]             @relation("Blocked")
+  donations           Donation[]
+  moderationActions   ModerationAction[]  @relation("ModActor")
+  moderationTargeted  ModerationAction[]  @relation("ModTarget")
+  auditLogs           AuditLog[]
+  moderatedCommunities Community[]        @relation("CommunityModerators")
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+// Only the SHA-256 hash of the token is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expires   DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ────────────────────────── Profiles & places ──────────────────────────
+
+model Profile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  bio           String?  @db.VarChar(300)
+  neighbourhood String?
+  city          String?
+  // PRIVATE: used only on the server for distance calculations.
+  // Never send these to other users.
+  latitude      Float?
+  longitude     Float?
+  locationUpdatedAt DateTime?
+  communityId   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  community       Community? @relation(fields: [communityId], references: [id])
+  favouriteGenres Genre[]    @relation("ProfileGenres")
+
+  @@index([latitude, longitude])
+}
+
+model Community {
+  id          String   @id @default(cuid())
+  name        String
+  city        String?
+  // Approximate centre of the neighbourhood (public).
+  centerLat   Float
+  centerLng   Float
+  radiusKm    Float    @default(3)
+  createdAt   DateTime @default(now())
+
+  members    Profile[]
+  listings   BookListing[]
+  moderators User[]        @relation("CommunityModerators")
+  reports    Report[]
+
+  @@unique([name, city])
+}
+
+model Institution {
+  id                 String             @id @default(cuid())
+  userId             String             @unique
+  name               String
+  type               InstitutionType
+  description        String?
+  publicAddress      String?            // institutions may show a public drop-off address
+  neighbourhood      String?
+  latitude           Float?
+  longitude          Float?
+  website            String?
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt         DateTime?
+  verifiedById       String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  donationRequests DonationRequest[]
+}
+
+// ──────────────────────────── Books & listings ────────────────────────────
+
+model Genre {
+  id       String @id @default(cuid())
+  name     String @unique
+  slug     String @unique
+
+  books           Book[]
+  fans            Profile[]         @relation("ProfileGenres")
+  donationRequests DonationRequest[] @relation("DonationRequestGenres")
+}
+
+// A book "edition" that many listings can point to.
+model Book {
+  id        String   @id @default(cuid())
+  title     String
+  author    String
+  isbn      String?
+  genreId   String?
+  createdAt DateTime @default(now())
+
+  genre    Genre?        @relation(fields: [genreId], references: [id])
+  listings BookListing[]
+
+  @@index([title])
+  @@index([author])
+}
+
+model BookListing {
+  id          String        @id @default(cuid())
+  ownerId     String
+  bookId      String
+  type        ListingType
+  condition   BookCondition
+  description String?       @db.VarChar(1000)
+  pricePaise  Int?          // sale price in smallest currency unit
+  status      ListingStatus @default(AVAILABLE)
+  // Approximate location copied from owner's profile when listed.
+  neighbourhood String?
+  latitude    Float?        // private, server-side only
+  longitude   Float?        // private, server-side only
+  communityId String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  removedAt   DateTime?
+
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  book         Book          @relation(fields: [bookId], references: [id])
+  community    Community?    @relation(fields: [communityId], references: [id])
+  images       BookImage[]
+  requests     Request[]     @relation("RequestedListing")
+  offeredIn    Request[]     @relation("OfferedListing")
+  transactions Transaction[]
+  reports      Report[]
+
+  @@index([status, type])
+  @@index([ownerId])
+  @@index([latitude, longitude])
+}
+
+model BookImage {
+  id        String   @id @default(cuid())
+  listingId String
+  url       String
+  alt       String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  listing BookListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────── Requests & transactions ───────────────────────
+
+model Request {
+  id               String        @id @default(cuid())
+  listingId        String
+  requesterId      String
+  type             ListingType
+  status           RequestStatus @default(PENDING)
+  message          String?       @db.VarChar(500)
+  // Exchange: the requester's own listing offered in return.
+  offeredListingId String?
+  // Borrow: proposed duration.
+  proposedDays     Int?
+  createdAt        DateTime      @default(now())
+  respondedAt      DateTime?
+  cancelledAt      DateTime?
+
+  listing        BookListing   @relation("RequestedListing", fields: [listingId], references: [id], onDelete: Cascade)
+  requester      User          @relation("Requester", fields: [requesterId], references: [id], onDelete: Cascade)
+  offeredListing BookListing?  @relation("OfferedListing", fields: [offeredListingId], references: [id])
+  transaction    Transaction?
+  conversation   Conversation?
+
+  @@index([listingId, status])
+  @@index([requesterId])
+}
+
+model Transaction {
+  id            String            @id @default(cuid())
+  requestId     String            @unique
+  listingId     String
+  ownerId       String
+  receiverId    String
+  type          ListingType
+  status        TransactionStatus @default(RESERVED)
+  agreedDueDate DateTime?         // borrow return date
+  handedOverAt  DateTime?
+  returnedAt    DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  request      Request          @relation(fields: [requestId], references: [id])
+  listing      BookListing      @relation(fields: [listingId], references: [id])
+  owner        User             @relation("TxOwner", fields: [ownerId], references: [id])
+  receiver     User             @relation("TxReceiver", fields: [receiverId], references: [id])
+  reservations Reservation[]
+  handover     HandoverDetails?
+  reviews      Review[]
+  disputes     Dispute[]
+
+  @@index([ownerId, status])
+  @@index([receiverId, status])
+  @@index([status, agreedDueDate])
+}
+
+// Expiry period comes from PlatformSetting "reservation_expiry_hours".
+// Only one ACTIVE reservation per listing must exist; enforce inside a
+// database transaction with row locking when confirming (PRD 20.3).
+model Reservation {
+  id            String            @id @default(cuid())
+  transactionId String
+  status        ReservationStatus @default(ACTIVE)
+  expiresAt     DateTime
+  confirmedAt   DateTime?
+  createdAt     DateTime          @default(now())
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+
+  @@index([status, expiresAt])
+}
+
+model HandoverDetails {
+  id            String         @id @default(cuid())
+  transactionId String         @unique
+  method        HandoverMethod
+  placeName     String?        // public meeting place, never a home address
+  scheduledAt   DateTime?
+  notes         String?        @db.VarChar(500)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  transaction Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────────── Messaging ───────────────────────────────
+
+model Conversation {
+  id            String   @id @default(cuid())
+  // userAId < userBId (sorted) so each pair+request is unique.
+  userAId       String
+  userBId       String
+  requestId     String?  @unique
+  lastMessageAt DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  userA    User      @relation("ConvUserA", fields: [userAId], references: [id], onDelete: Cascade)
+  userB    User      @relation("ConvUserB", fields: [userBId], references: [id], onDelete: Cascade)
+  request  Request?  @relation(fields: [requestId], references: [id])
+  messages Message[]
+
+  @@index([userAId, lastMessageAt])
+  @@index([userBId, lastMessageAt])
+}
+
+model Message {
+  id             String      @id @default(cuid())
+  conversationId String
+  senderId       String
+  type           MessageType @default(TEXT)
+  body           String?     @db.VarChar(4000)
+  mediaUrl       String?
+  durationSec    Int?        // voice messages
+  readAt         DateTime?
+  createdAt      DateTime    @default(now())
+  deletedAt      DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  reports      Report[]
+
+  @@index([conversationId, createdAt])
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker User @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked User @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+
+  @@id([blockerId, blockedId])
+}
+
+// ───────────────────────────── Notifications ─────────────────────────────
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveries NotificationDelivery[]
+
+  @@index([userId, readAt, createdAt])
+}
+
+// One row per external channel attempt (email/SMS/push), for retries.
+model NotificationDelivery {
+  id             String              @id @default(cuid())
+  notificationId String
+  channel        NotificationChannel
+  status         DeliveryStatus      @default(PENDING)
+  attempts       Int                 @default(0)
+  lastError      String?
+  nextAttemptAt  DateTime?
+  sentAt         DateTime?
+  createdAt      DateTime            @default(now())
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([status, nextAttemptAt])
+}
+
+model NotificationPreference {
+  userId  String
+  type    NotificationType
+  channel NotificationChannel
+  enabled Boolean          @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, type, channel])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─────────────────────────── Trust & safety ───────────────────────────
+
+model Review {
+  id            String    @id @default(cuid())
+  transactionId String
+  reviewerId    String
+  revieweeId    String
+  rating        Int       // 1–5, validated in app code
+  comment       String?   @db.VarChar(1000)
+  createdAt     DateTime  @default(now())
+  removedAt     DateTime? // removed by admin → excluded from averages
+  removedById   String?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  reviewer    User        @relation("Reviewer", fields: [reviewerId], references: [id], onDelete: Cascade)
+  reviewee    User        @relation("Reviewee", fields: [revieweeId], references: [id], onDelete: Cascade)
+  reports     Report[]
+
+  @@unique([transactionId, reviewerId])
+  @@index([revieweeId, removedAt])
+}
+
+model Report {
+  id             String       @id @default(cuid())
+  reporterId     String
+  target         ReportTarget
+  reason         String       @db.VarChar(1000)
+  status         ReportStatus @default(OPEN)
+  reportedUserId String?
+  listingId      String?
+  messageId      String?
+  reviewId       String?
+  communityId    String?
+  handledById    String?
+  resolution     String?
+  createdAt      DateTime     @default(now())
+  resolvedAt     DateTime?
+
+  reporter     User         @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUser User?        @relation("ReportedUser", fields: [reportedUserId], references: [id])
+  listing      BookListing? @relation(fields: [listingId], references: [id])
+  message      Message?     @relation(fields: [messageId], references: [id])
+  review       Review?      @relation(fields: [reviewId], references: [id])
+  community    Community?   @relation(fields: [communityId], references: [id])
+  handledBy    User?        @relation("ReportHandler", fields: [handledById], references: [id])
+
+  @@index([status, communityId])
+}
+
+model Dispute {
+  id            String        @id @default(cuid())
+  transactionId String
+  openedById    String
+  kind          DisputeKind
+  description   String        @db.VarChar(2000)
+  status        DisputeStatus @default(OPEN)
+  resolution    String?
+  resolvedById  String?
+  createdAt     DateTime      @default(now())
+  resolvedAt    DateTime?
+
+  transaction Transaction @relation(fields: [transactionId], references: [id])
+  openedBy    User        @relation("DisputeOpener", fields: [openedById], references: [id])
+  resolvedBy  User?       @relation("DisputeResolver", fields: [resolvedById], references: [id])
+
+  @@index([status])
+}
+
+// ───────────────────────── Institutional donations ─────────────────────────
+
+model DonationRequest {
+  id            String                @id @default(cuid())
+  institutionId String
+  title         String
+  description   String?               @db.VarChar(2000)
+  booksWanted   String?               // free-text list of wanted titles
+  quantityGoal  Int?
+  status        DonationRequestStatus @default(OPEN)
+  dropOffInfo   String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  closedAt      DateTime?
+
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
+  genres      Genre[]     @relation("DonationRequestGenres")
+  donations   Donation[]
+
+  @@index([status])
+}
+
+model Donation {
+  id                String         @id @default(cuid())
+  donationRequestId String
+  donorId           String
+  description       String         // which books
+  quantity          Int            @default(1)
+  status            DonationStatus @default(PLEDGED)
+  handoverMethod    HandoverMethod @default(INSTITUTION_POINT)
+  scheduledAt       DateTime?
+  receivedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  donationRequest DonationRequest @relation(fields: [donationRequestId], references: [id], onDelete: Cascade)
+  donor           User            @relation(fields: [donorId], references: [id], onDelete: Cascade)
+}
+
+// ───────────────────────────── Administration ─────────────────────────────
+
+model ModerationAction {
+  id         String   @id @default(cuid())
+  actorId    String
+  targetUserId String?
+  action     String   // e.g. "SUSPEND_USER", "REMOVE_LISTING", "REMOVE_REVIEW"
+  reason     String?
+  entityType String?
+  entityId   String?
+  createdAt  DateTime @default(now())
+
+  actor      User  @relation("ModActor", fields: [actorId], references: [id])
+  targetUser User? @relation("ModTarget", fields: [targetUserId], references: [id])
+
+  @@index([targetUserId])
+}
+
+// Append-only log of sensitive admin actions (PRD section 3).
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String?
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  actor User? @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// Admin-configurable settings, e.g. key "reservation_expiry_hours".
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}

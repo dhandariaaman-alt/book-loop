@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #faf8f4;
+  --surface: #ffffff;
+  --surface-2: #f3efe8;
+  --fg: #1c1a17;
+  --muted: #6b645b;
+  --border: #e6e0d6;
+  --brand: #2f6f5e;
+  --brand-hover: #275c4e;
+  --brand-fg: #ffffff;
+  --brand-soft: #e2eee8;
+  --accent: #c2703d;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --success: #1f7a4d;
+  --success-soft: #e5f4ec;
+}
+
+.dark {
+  --bg: #13120f;
+  --surface: #1c1a17;
+  --surface-2: #24221e;
+  --fg: #f1ede6;
+  --muted: #a49d92;
+  --border: #302d28;
+  --brand: #6fbfa5;
+  --brand-hover: #86cdb5;
+  --brand-fg: #0e1d18;
+  --brand-soft: #1d2c27;
+  --accent: #e0935f;
+  --danger: #f97066;
+  --danger-soft: #3a1d1b;
+  --success: #6fcf97;
+  --success-soft: #19301f;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
+}
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .btn-primary,
+  .btn-secondary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-primary {
+    @apply bg-brand text-brand-fg hover:bg-brand-hover;
+  }
+  .btn-secondary {
+    @apply border border-border bg-surface text-fg hover:bg-surface-2;
+  }
+  .btn-ghost {
+    @apply text-muted hover:bg-surface-2 hover:text-fg;
+  }
+  .input {
+    @apply w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm text-fg placeholder:text-muted focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/25;
+  }
+  .label {
+    @apply mb-1.5 block text-sm font-medium;
+  }
+  .card {
+    @apply rounded-2xl border border-border bg-surface;
+  }
+  .heading {
+    @apply font-serif tracking-tight;
+  }
+}
