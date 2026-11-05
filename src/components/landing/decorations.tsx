@@ -68,7 +68,7 @@ const SHAPES: Record<DoodleKind, (fill: string) => React.ReactNode> = {
 /** Wavy edge between two sections. `color` is the colour of the section below. */
 export function WaveDivider({ color, flip = false, className = "" }: { color: string; flip?: boolean; className?: string }) {
   return (
-    <div aria-hidden className={`pointer-events-none relative -mb-px h-12 w-full sm:h-16 ${className}`} style={{ transform: flip ? "scaleY(-1)" : undefined }}>
+    <div aria-hidden className={`pointer-events-none relative -mb-px h-8 w-full sm:h-10 ${className}`} style={{ transform: flip ? "scaleY(-1)" : undefined }}>
       <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
         <path d="M0 48c120-28 240-28 360 0s240 28 360 0 240-28 360 0 240 28 360 0v32H0Z" fill={color} />
       </svg>

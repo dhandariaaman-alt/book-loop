@@ -77,7 +77,7 @@ export function Hero() {
       {/* fade the glow out so the section has no hard bottom edge */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-b from-transparent to-bg" />
 
-      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:py-24 lg:grid-cols-2">
+      <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-12 sm:py-16 lg:grid-cols-2">
         <div>
           <span className="animate-fade-up inline-block rounded-full bg-brand-soft px-3 py-1 text-sm font-medium text-brand">
             Community book sharing

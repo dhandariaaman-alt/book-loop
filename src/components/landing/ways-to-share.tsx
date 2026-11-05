@@ -20,8 +20,11 @@ function Book({ className = "", style }: { className?: string; style?: React.CSS
   );
 }
 
+// Each way gets its own pastel tint so the cards don't look identical.
+const TINT: Record<string, string> = { borrow: "bg-mint", exchange: "bg-peach", give: "bg-rose", sell: "bg-sky" };
+
 function Illustration({ kind }: { kind: string }) {
-  const base = "relative mt-5 flex h-16 items-center justify-center overflow-hidden rounded-xl bg-surface-2";
+  const base = `relative mt-5 flex h-16 items-center justify-center overflow-hidden rounded-xl ${TINT[kind] ?? "bg-surface-2"}`;
   if (kind === "borrow")
     return (
       <div className={base} aria-hidden>
@@ -137,7 +140,7 @@ function TiltCard({ children }: { children: ReactNode }) {
 
 export function WaysToShare() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16">
+    <section className="mx-auto max-w-6xl px-4">
       <style>{`
         @keyframes wts-slide { 0%,100% { transform: translateX(-24px); } 50% { transform: translateX(24px); } }
         @keyframes wts-swap-a { 0%,100% { transform: translateX(0); } 50% { transform: translateX(56px); } }
@@ -149,11 +152,11 @@ export function WaysToShare() {
         }
       `}</style>
       <h2 className="heading text-3xl sm:text-4xl font-semibold">Four ways to keep books moving</h2>
-      <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-7 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
         {ways.map((w, i) => (
           <Reveal key={w.key} delay={i * 100}>
             <TiltCard>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-soft text-brand">
+              <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-brand ${TINT[w.key]}`}>
                 <svg
                   viewBox="0 0 24 24"
                   className="h-6 w-6"

@@ -103,7 +103,7 @@ export function BookShelves() {
   const chips: Filter[] = ["All", ...SHELF_GENRES];
 
   return (
-    <section className="overflow-x-hidden py-16 sm:py-20">
+    <section className="overflow-x-hidden">
       <div className="mx-auto max-w-6xl px-4">
         <h2 className="heading text-3xl font-semibold sm:text-4xl">Stories waiting on shelves near you</h2>
         <p className="mt-3 text-muted">Famous books readers love to pass on. Tap any book to take a closer look.</p>

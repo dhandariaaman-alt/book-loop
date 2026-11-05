@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const SPEED_PX_PER_SEC = 45; // gentle reading pace
+const SPEED_PX_PER_SEC = 110; // brisk tour pace
 const START_DELAY_MS = 2500; // let the hero animate in first
 const RESUME_AFTER_MS = 6000; // idle time before resuming after the visitor interacts
 const PAUSE_AT_BOTTOM_MS = 3000;

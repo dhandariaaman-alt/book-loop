@@ -3,9 +3,9 @@ import { Reveal } from "@/components/landing/reveal";
 
 export function FinalCta() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16">
+    <section className="mx-auto max-w-6xl px-4">
       <Reveal>
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-peach via-butter to-mint px-6 py-16 text-center text-fg sm:px-12 sm:py-24">
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-br from-peach via-butter to-mint px-6 py-12 text-center text-fg sm:px-12 sm:py-16">
           <div aria-hidden className="dot-grid pointer-events-none absolute inset-0 opacity-60" />
           <div
             aria-hidden

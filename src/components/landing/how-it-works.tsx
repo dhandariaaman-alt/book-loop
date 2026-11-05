@@ -151,7 +151,7 @@ export function HowItWorks() {
   return (
     <section
       ref={rootRef}
-      className="mx-auto max-w-6xl px-4 py-16"
+      className="mx-auto max-w-6xl px-4"
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
       onFocus={() => setFocused(true)}
@@ -163,7 +163,7 @@ export function HowItWorks() {
         @keyframes hiw-star { from { opacity: .2; transform: scale(.6); } to { opacity: 1; transform: scale(1); } }
       `}</style>
       <h2 className="heading text-3xl sm:text-4xl font-semibold">How it works</h2>
-      <div className="mt-10 grid gap-8 lg:grid-cols-2 lg:items-center">
+      <div className="mt-7 grid gap-8 lg:grid-cols-2 lg:items-center">
         <ol className="space-y-3">
           {steps.map((s, i) => {
             const on = i === active;
