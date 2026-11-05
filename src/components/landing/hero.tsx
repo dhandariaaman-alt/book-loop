@@ -59,19 +59,19 @@ export function Hero() {
   } as CSSProperties;
 
   return (
-    <section className="relative overflow-hidden">
+    <section className="relative isolate overflow-hidden">
       <div
         aria-hidden
-        className="animate-blob pointer-events-none absolute -top-24 -left-24 -z-10 h-96 w-96 rounded-full bg-brand opacity-20 blur-3xl"
+        className="animate-blob pointer-events-none absolute -top-24 -left-24 -z-10 h-96 w-96 rounded-full bg-mint opacity-90 blur-3xl"
       />
       <div
         aria-hidden
-        className="animate-blob pointer-events-none absolute top-1/3 -right-24 -z-10 h-96 w-96 rounded-full bg-accent opacity-20 blur-3xl"
+        className="animate-blob pointer-events-none absolute top-1/3 -right-24 -z-10 h-96 w-96 rounded-full bg-peach opacity-90 blur-3xl"
         style={{ animationDelay: "-4s" }}
       />
       <div
         aria-hidden
-        className="animate-blob pointer-events-none absolute bottom-0 left-1/3 -z-10 h-80 w-80 rounded-full bg-brand opacity-10 blur-3xl"
+        className="animate-blob pointer-events-none absolute bottom-0 left-1/3 -z-10 h-80 w-80 rounded-full bg-lavender opacity-80 blur-3xl"
         style={{ animationDelay: "-8s" }}
       />
       {/* fade the glow out so the section has no hard bottom edge */}

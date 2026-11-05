@@ -18,6 +18,13 @@
   --danger-soft: #fdecea;
   --success: #1f7a4d;
   --success-soft: #e5f4ec;
+  /* pastel palette (landing page) */
+  --mint: #dcf2e7;
+  --peach: #fde3d3;
+  --lavender: #e8e3fb;
+  --sky: #dbeafa;
+  --butter: #fdf0c4;
+  --rose: #fbdde4;
 }
 
 .dark {
@@ -36,6 +43,12 @@
   --danger-soft: #3a1d1b;
   --success: #6fcf97;
   --success-soft: #19301f;
+  --mint: #1b2e27;
+  --peach: #33241c;
+  --lavender: #26223a;
+  --sky: #1b2633;
+  --butter: #312a17;
+  --rose: #33202a;
 }
 
 @theme inline {
@@ -54,6 +67,12 @@
   --color-danger-soft: var(--danger-soft);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
+  --color-mint: var(--mint);
+  --color-peach: var(--peach);
+  --color-lavender: var(--lavender);
+  --color-sky: var(--sky);
+  --color-butter: var(--butter);
+  --color-rose: var(--rose);
   --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, ui-serif, serif;
 }
 
@@ -153,12 +172,35 @@ body {
 .reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--delay, 0ms); }
 .reveal.is-visible { opacity: 1; transform: none; }
 
+@keyframes wiggle {
+  0%, 100% { transform: rotate(var(--r, 0deg)); }
+  50% { transform: rotate(calc(var(--r, 0deg) + 10deg)); }
+}
+@keyframes twinkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(0.7) rotate(25deg); opacity: 0.6; }
+}
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) rotate(var(--r, 0deg)); }
+  50% { transform: translate(14px, -18px) rotate(calc(var(--r, 0deg) + 6deg)); }
+}
+.animate-wiggle { animation: wiggle 4s ease-in-out infinite; }
+.animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
+.animate-drift { animation: drift 9s ease-in-out infinite; }
+
+/* Soft dotted paper background */
+.dot-grid {
+  background-image: radial-gradient(color-mix(in srgb, var(--fg) 13%, transparent) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
 .mask-fade-x { mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent); }
 
 dialog::backdrop { background: rgb(0 0 0 / 0.55); backdrop-filter: blur(4px); }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee, .animate-marquee-reverse, .animate-float, .animate-fade-up, .animate-pop-in,
-  .animate-word-in, .animate-progress, .animate-blob { animation: none !important; }
+  .animate-word-in, .animate-progress, .animate-blob,
+  .animate-wiggle, .animate-twinkle, .animate-drift { animation: none !important; }
   .reveal { opacity: 1; transform: none; transition: none; }
 }

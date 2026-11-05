@@ -7,9 +7,12 @@ const ORDER = ["light", "dark", "system"] as const;
 const LABEL = { light: "Light theme", dark: "Dark theme", system: "System theme" };
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, forcedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Pages with a fixed theme (like the landing page) don't need a toggle.
+  if (mounted && forcedTheme) return null;
 
   const current = (mounted ? theme : "system") as (typeof ORDER)[number];
   const next = ORDER[(ORDER.indexOf(current) + 1) % ORDER.length];
