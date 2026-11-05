@@ -184,9 +184,20 @@ body {
   0%, 100% { transform: translate(0, 0) rotate(var(--r, 0deg)); }
   50% { transform: translate(14px, -18px) rotate(calc(var(--r, 0deg) + 6deg)); }
 }
+/* Rubber stamp that thumps onto a card when its <Reveal> becomes visible */
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(2.4) rotate(var(--stamp-r, -12deg)); }
+  60% { opacity: 0.95; transform: scale(0.94) rotate(var(--stamp-r, -12deg)); }
+  100% { opacity: 0.88; transform: scale(1) rotate(var(--stamp-r, -12deg)); }
+}
+.stamp { opacity: 0; transform: rotate(var(--stamp-r, -12deg)); }
+.reveal.is-visible .stamp { animation: stamp 0.45s cubic-bezier(0.3, 1.4, 0.5, 1) both; animation-delay: calc(var(--delay, 0ms) + 450ms); }
+
 .animate-wiggle { animation: wiggle 4s ease-in-out infinite; }
 .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
 .animate-drift { animation: drift 9s ease-in-out infinite; }
+
+.font-hand { font-family: "Caveat", "Segoe Print", "Bradley Hand", cursive; }
 
 /* Soft dotted paper background */
 .dot-grid {
@@ -203,4 +214,5 @@ dialog::backdrop { background: rgb(0 0 0 / 0.55); backdrop-filter: blur(4px); }
   .animate-word-in, .animate-progress, .animate-blob,
   .animate-wiggle, .animate-twinkle, .animate-drift { animation: none !important; }
   .reveal { opacity: 1; transform: none; transition: none; }
+  .stamp, .reveal.is-visible .stamp { animation: none; opacity: 0.88; }
 }

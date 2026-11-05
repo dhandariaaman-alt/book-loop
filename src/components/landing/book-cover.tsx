@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { FamousBook } from "@/lib/famous-books";
 
 const SIZES = {
+  xs: { w: 72, h: 108, title: 9, author: 7, img: "M" },
   sm: { w: 112, h: 168, title: 13, author: 9, img: "M" },
   md: { w: 140, h: 210, title: 15, author: 10, img: "M" },
   lg: { w: 200, h: 300, title: 22, author: 12, img: "L" },
