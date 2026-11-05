@@ -1,24 +1,38 @@
+"use client";
+
+/* eslint-disable @next/next/no-img-element */
+import { useEffect, useRef, useState } from "react";
 import type { FamousBook } from "@/lib/famous-books";
 
 const SIZES = {
-  sm: { w: 112, h: 168, title: 13, author: 9 },
-  md: { w: 140, h: 210, title: 15, author: 10 },
-  lg: { w: 200, h: 300, title: 22, author: 12 },
-};
+  sm: { w: 112, h: 168, title: 13, author: 9, img: "M" },
+  md: { w: 140, h: 210, title: 15, author: 10, img: "M" },
+  lg: { w: 200, h: 300, title: 22, author: 12, img: "L" },
+} as const;
 
-/** A drawn book cover (no copied artwork). Purely visual; wrap it in a button to make it interactive. */
+/**
+ * A book cover: the real cover from Open Library when available, otherwise a drawn one.
+ * Purely visual; wrap it in a button to make it interactive.
+ */
 export function BookCover({ book, size = "md", className = "" }: { book: FamousBook; size?: keyof typeof SIZES; className?: string }) {
   const s = SIZES[size];
+  const [status, setStatus] = useState<"loading" | "loaded" | "failed">("loading");
+  const imgRef = useRef<HTMLImageElement>(null);
+
+  // A cached image can finish before React attaches onLoad; catch that case.
+  useEffect(() => {
+    const img = imgRef.current;
+    if (img?.complete) setStatus(img.naturalWidth > 10 ? "loaded" : "failed");
+  }, []);
+
   return (
     <div
       aria-hidden
       className={`relative shrink-0 overflow-hidden rounded-r-lg rounded-l-[3px] shadow-[0_10px_30px_-10px_rgb(0_0_0/0.45)] ${className}`}
       style={{ width: s.w, height: s.h, background: book.color, color: book.ink }}
     >
+      {/* Drawn cover: shown while the real one loads, or if it can't load. */}
       <Pattern kind={book.pattern} ink={book.ink} />
-      {/* spine shading */}
-      <div className="absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/35 to-transparent" />
-      <div className="absolute inset-y-0 left-3 w-px bg-white/20" />
       <div className="absolute inset-0 flex flex-col justify-between p-[10%] pl-[16%]">
         <p className="font-serif font-semibold leading-tight" style={{ fontSize: s.title }}>
           {book.title}
@@ -27,6 +41,24 @@ export function BookCover({ book, size = "md", className = "" }: { book: FamousB
           {book.author}
         </p>
       </div>
+      {book.coverId && status !== "failed" && (
+        <img
+          ref={imgRef}
+          src={`https://covers.openlibrary.org/b/id/${book.coverId}-${s.img}.jpg`}
+          alt=""
+          width={s.w}
+          height={s.h}
+          decoding="async"
+          draggable={false}
+          onError={() => setStatus("failed")}
+          // Open Library returns a 1x1 image when a cover is missing.
+          onLoad={(e) => setStatus(e.currentTarget.naturalWidth < 10 ? "failed" : "loaded")}
+          className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-500 ${status === "loaded" ? "opacity-100" : "opacity-0"}`}
+        />
+      )}
+      {/* spine shading */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-3 bg-gradient-to-r from-black/40 to-transparent" />
+      <div className="pointer-events-none absolute inset-y-0 left-3 w-px bg-white/25" />
       {/* sheen */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/15 via-transparent to-black/10" />
     </div>
