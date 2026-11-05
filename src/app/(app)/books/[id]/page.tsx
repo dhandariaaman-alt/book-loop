@@ -6,10 +6,13 @@ import { conditionLabel, getListing, STATUS_LABEL } from "@/lib/listings";
 import { formatDistance } from "@/lib/geo";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/avatar";
-import { Icon, SoonBadge } from "@/components/app/ui";
+import { Icon } from "@/components/app/ui";
 import { DrawnCover, TypePill } from "@/components/listings/listing-card";
 import { Gallery } from "@/components/listings/gallery";
 import { OwnerActions } from "@/components/listings/owner-actions";
+import { activeTransactionForListing, formatDate, pendingRequestsForListing, requesterContext } from "@/lib/transactions";
+import { RequestForm } from "@/components/requests/request-form";
+import { CancelRequestButton, RequestDecision } from "@/components/requests/request-buttons";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -35,6 +38,13 @@ export default async function BookPage({ params, searchParams }: Props) {
     .join(" · ");
   const available = book.status === "AVAILABLE";
   const ownerName = book.owner.name ?? book.owner.username;
+
+  const [ownerRequests, ownerActive, mine] = await Promise.all([
+    book.isMine ? pendingRequestsForListing(book.id) : null,
+    book.isMine ? activeTransactionForListing(book.id) : null,
+    book.isMine ? null : requesterContext(book.id, me.id),
+  ]);
+  const requestable = book.status === "AVAILABLE" || book.status === "REQUEST_PENDING";
 
   return (
     <div className="min-w-0">
@@ -115,17 +125,92 @@ export default async function BookPage({ params, searchParams }: Props) {
 
           <div className="mt-6">
             {book.isMine ? (
-              <OwnerActions id={book.id} status={book.status} />
+              <div className="space-y-6">
+                <OwnerActions id={book.id} status={book.status} />
+                {ownerActive && (
+                  <div className="card flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+                    <p>
+                      In a hand-off with <span className="font-semibold">@{ownerActive.receiver.username}</span>.
+                    </p>
+                    <Link href={`/transactions/${ownerActive.id}`} className="btn-primary text-sm">
+                      View hand-off
+                    </Link>
+                  </div>
+                )}
+                <section className="card p-4 sm:p-5" aria-label="Requests for this book">
+                  <h2 className="heading text-lg font-semibold">Requests for this book</h2>
+                  {!ownerRequests || ownerRequests.length === 0 ? (
+                    <p className="mt-2 text-sm text-muted">No pending requests. When a neighbour asks for it, they&apos;ll show up here.</p>
+                  ) : (
+                    <ul className="mt-3 divide-y divide-border">
+                      {ownerRequests.map((r) => (
+                        <li key={r.id} className="py-4 first:pt-0 last:pb-0">
+                          <div className="flex items-center gap-3">
+                            <Avatar name={r.requester.name ?? r.requester.username} image={r.requester.image} size={36} />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium">
+                                <Link href={`/u/${r.requester.username}`} className="hover:underline">
+                                  {r.requester.name ?? r.requester.username}
+                                </Link>{" "}
+                                <span className="font-normal text-muted">@{r.requester.username}</span>
+                              </p>
+                              <p className="text-xs text-muted">{formatDate(r.createdAt)}</p>
+                            </div>
+                          </div>
+                          {(r.proposedDays || r.offeredListing) && (
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                              {r.proposedDays && <span className="rounded-full bg-sky px-2.5 py-0.5">For {r.proposedDays} days</span>}
+                              {r.offeredListing && (
+                                <Link href={`/books/${r.offeredListing.id}`} className="rounded-full bg-lavender px-2.5 py-0.5 hover:underline">
+                                  Offers: {r.offeredListing.book.title}
+                                </Link>
+                              )}
+                            </div>
+                          )}
+                          {r.message && (
+                            <p className="mt-2 whitespace-pre-line rounded-xl bg-surface-2 p-3 text-sm [overflow-wrap:anywhere]">{r.message}</p>
+                          )}
+                          <div className="mt-3">
+                            <RequestDecision requestId={r.id} />
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
             ) : (
               <div className="card p-4 sm:p-5">
-                <div className="flex flex-wrap items-center gap-3">
-                  <button type="button" disabled className="btn-primary">
-                    <Icon kind="swap" className="h-4 w-4" />
-                    Request this book
-                  </button>
-                  <SoonBadge phase={3} />
+                <h2 className="heading flex items-center gap-2 text-lg font-semibold">
+                  <span className="h-5 w-5 text-brand">
+                    <Icon kind="swap" />
+                  </span>
+                  Request this book
+                </h2>
+                <div className="mt-3">
+                  {mine?.active ? (
+                    <div className="rounded-xl bg-mint p-3 text-sm">
+                      <p className="font-medium">The owner accepted your request.</p>
+                      <Link href={`/transactions/${mine.active.id}`} className="btn-primary mt-3 text-sm">
+                        View hand-off
+                      </Link>
+                    </div>
+                  ) : mine?.pending ? (
+                    <div className="rounded-xl bg-sky p-3 text-sm">
+                      <p className="font-medium">Request sent. Waiting for the owner.</p>
+                      <p className="mt-0.5 text-xs text-fg/70">Sent {formatDate(mine.pending.createdAt)}</p>
+                      <div className="mt-2">
+                        <CancelRequestButton requestId={mine.pending.id} />
+                      </div>
+                    </div>
+                  ) : requestable ? (
+                    <RequestForm listingId={book.id} type={book.type} myAvailable={mine?.myAvailable ?? []} />
+                  ) : (
+                    <p className="rounded-xl bg-surface-2 p-3 text-sm text-muted">
+                      This book isn&apos;t open for requests right now. Check back later or find another copy in Discover.
+                    </p>
+                  )}
                 </div>
-                <p className="mt-2 text-sm text-muted">Requests open in the next update. For now, you can save the link and check back.</p>
                 <p className="mt-4 flex items-start gap-2 rounded-xl bg-butter p-3 text-sm text-fg">
                   <span className="mt-0.5 h-4 w-4 shrink-0">
                     <Icon kind="pin" />

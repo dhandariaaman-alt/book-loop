@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { Avatar } from "@/components/avatar";
@@ -74,6 +75,27 @@ export default async function EditProfilePage({ searchParams }: { searchParams: 
             genreIds: p?.favouriteGenres.map((g) => g.id) ?? [],
           }}
         />
+
+        <section className="card p-5 sm:p-6" aria-labelledby="more-settings">
+          <h2 id="more-settings" className="heading text-2xl font-semibold">More settings</h2>
+          <ul className="mt-4 grid gap-3 sm:grid-cols-3">
+            {[
+              { href: "/settings/notifications", title: "Notifications", text: "Email, push and SMS alerts" },
+              { href: "/settings/blocked", title: "Blocked people", text: "People you've blocked" },
+              { href: "/settings/institution", title: "Library or centre", text: "Register an institution" },
+            ].map((l) => (
+              <li key={l.href}>
+                <Link href={l.href} className="card card-hover group block h-full p-4">
+                  <span className="flex items-center justify-between font-medium">
+                    {l.title}
+                    <span aria-hidden className="text-muted transition-transform group-hover:translate-x-0.5">→</span>
+                  </span>
+                  <span className="mt-1 block text-sm text-muted">{l.text}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
     </div>
   );

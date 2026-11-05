@@ -1,4 +1,4 @@
-// Book photo storage.
+// Book photo and voice message storage.
 // - If SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are set, photos go to the
 //   public Supabase Storage bucket SUPABASE_BUCKET (default "book-images").
 // - Otherwise (local development) they are written to public/uploads.
@@ -57,4 +57,60 @@ export async function saveImage(file: File): Promise<string> {
   await mkdir(dir, { recursive: true });
   await writeFile(path.join(dir, name), buf);
   return `/uploads/${name}`;
+}
+
+// ─────────────────────────── Voice messages ───────────────────────────
+
+export const MAX_AUDIO_BYTES = 3 * 1024 * 1024;
+
+const AUDIO_TYPES = {
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/mp4": "m4a",
+  "audio/mpeg": "mp3",
+} as const;
+
+type AudioMime = keyof typeof AUDIO_TYPES;
+
+/** Check the recording really is an audio container we accept (magic bytes). */
+function sniffAudio(buf: Buffer): AudioMime | null {
+  if (buf.length < 12) return null;
+  // WebM / Matroska (EBML header)
+  if (buf[0] === 0x1a && buf[1] === 0x45 && buf[2] === 0xdf && buf[3] === 0xa3) return "audio/webm";
+  if (buf.toString("ascii", 0, 4) === "OggS") return "audio/ogg";
+  // MP4 / M4A: "ftyp" box at offset 4
+  if (buf.toString("ascii", 4, 8) === "ftyp") return "audio/mp4";
+  // MP3: ID3 tag or an MPEG frame sync
+  if (buf.toString("ascii", 0, 3) === "ID3") return "audio/mpeg";
+  if (buf[0] === 0xff && (buf[1] & 0xe0) === 0xe0) return "audio/mpeg";
+  return null;
+}
+
+/** Validate and store one voice recording. Returns its public URL. */
+export async function saveAudio(file: File): Promise<string> {
+  if (file.size === 0) throw new UploadError("The recording is empty.");
+  if (file.size > MAX_AUDIO_BYTES) throw new UploadError("Voice messages must be 3 MB or smaller.");
+  const buf = Buffer.from(await file.arrayBuffer());
+  const mime = sniffAudio(buf);
+  if (!mime) throw new UploadError("That recording format isn't supported.");
+
+  const name = `${randomUUID()}.${AUDIO_TYPES[mime]}`;
+  const base = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (base && key) {
+    const bucket = process.env.SUPABASE_BUCKET || "book-images";
+    const res = await fetch(`${base}/storage/v1/object/${bucket}/voice/${name}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": mime, "x-upsert": "false" },
+      body: buf,
+    });
+    if (!res.ok) throw new UploadError("We couldn't store that recording. Please try again.");
+    return `${base}/storage/v1/object/public/${bucket}/voice/${name}`;
+  }
+
+  const dir = path.join(process.cwd(), "public", "uploads", "voice");
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, name), buf);
+  return `/uploads/voice/${name}`;
 }

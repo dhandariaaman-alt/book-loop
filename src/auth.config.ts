@@ -7,6 +7,8 @@ const PRIVATE_PREFIXES = [
   "/dashboard",
   "/discover",
   "/books",
+  "/transactions",
+  "/notifications",
   "/activity",
   "/community",
   "/messages",
@@ -25,15 +27,11 @@ export default {
       const path = request.nextUrl.pathname;
       const user = auth?.user;
       if (!PRIVATE_PREFIXES.some((p) => path.startsWith(p))) return true;
-      if (!user) return false; // → redirected to /login with callbackUrl
-
-      const role = user.role;
-      const denied =
-        (path.startsWith("/admin") && role !== "ADMIN") ||
-        (path.startsWith("/moderator") && role !== "MODERATOR" && role !== "ADMIN") ||
-        (path.startsWith("/institution") && role !== "INSTITUTION" && role !== "ADMIN");
-      if (denied) return Response.redirect(new URL("/dashboard", request.nextUrl));
-      return true;
+      // Middleware only requires being signed in. Role checks for /admin,
+      // /moderator and /institution happen on the server in each layout/page
+      // (requireRole and friends), which read the role fresh from the database.
+      // The role in this cookie can be stale right after an admin changes it.
+      return Boolean(user); // false → redirected to /login with callbackUrl
     },
     jwt({ token, user }) {
       if (user) {

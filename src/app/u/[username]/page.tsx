@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/avatar";
 import { Doodle } from "@/components/landing/decorations";
 import { DrawnCover } from "@/components/listings/listing-card";
+import { ReportButton } from "@/components/trust/report-button";
+import { BlockButton } from "@/components/trust/block-button";
 import "@fontsource/caveat/latin-500.css";
 
 type Params = { params: Promise<{ username: string }> };
@@ -73,11 +75,16 @@ export default async function PublicProfilePage({ params }: Params) {
       where: { revieweeId: user.id, removedAt: null },
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { id: true, rating: true, comment: true, createdAt: true, reviewer: { select: { name: true, username: true } } },
+      select: { id: true, rating: true, comment: true, createdAt: true, reviewerId: true, reviewer: { select: { name: true, username: true } } },
     }),
   ]);
 
-  const isMe = session?.user?.id === user.id;
+  const viewerId = session?.user?.id;
+  const isMe = viewerId === user.id;
+  const iBlocked =
+    viewerId && !isMe
+      ? (await prisma.block.count({ where: { blockerId: viewerId, blockedId: user.id } })) > 0
+      : false;
   const place = [user.profile?.neighbourhood, user.profile?.city].filter(Boolean).join(", ");
 
   return (
@@ -113,6 +120,12 @@ export default async function PublicProfilePage({ params }: Params) {
           )}
           {isMe && (
             <Link href="/settings/profile" className="btn-secondary mt-4">Edit profile</Link>
+          )}
+          {viewerId && !isMe && (
+            <div className="mt-4 flex flex-wrap items-center gap-1">
+              <ReportButton target="USER" targetId={user.id} reportedUserId={user.id} label="Report member" />
+              <BlockButton userId={user.id} username={user.username} initiallyBlocked={iBlocked} />
+            </div>
           )}
         </div>
         </div>
@@ -173,16 +186,21 @@ export default async function PublicProfilePage({ params }: Params) {
           <ul className="mt-4 space-y-3">
             {reviews.map((r) => (
               <li key={r.id} className="card border-[#e8dcc0] p-4" style={RULED}>
-                <p className="text-sm">
-                  <span className="text-accent" aria-label={`${r.rating} out of 5 stars`}>
-                    {"★".repeat(r.rating)}
-                    <span className="text-border">{"★".repeat(5 - r.rating)}</span>
-                  </span>{" "}
-                  by{" "}
-                  <Link href={`/u/${r.reviewer.username}`} className="text-brand hover:underline">
-                    {r.reviewer.name ?? r.reviewer.username}
-                  </Link>
-                </p>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm">
+                    <span className="text-accent" aria-label={`${r.rating} out of 5 stars`}>
+                      {"★".repeat(r.rating)}
+                      <span className="text-border">{"★".repeat(5 - r.rating)}</span>
+                    </span>{" "}
+                    by{" "}
+                    <Link href={`/u/${r.reviewer.username}`} className="text-brand hover:underline">
+                      {r.reviewer.name ?? r.reviewer.username}
+                    </Link>
+                  </p>
+                  {viewerId && viewerId !== r.reviewerId && (
+                    <ReportButton target="REVIEW" targetId={r.id} reportedUserId={r.reviewerId} />
+                  )}
+                </div>
                 {r.comment && <p className="font-hand mt-1 text-xl leading-7">{r.comment}</p>}
               </li>
             ))}

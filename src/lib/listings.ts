@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { BookCondition, ListingStatus, ListingType, Prisma } from "@prisma/client";
 import { prisma } from "./prisma";
 import { boundingBox, distanceKm, RADIUS_OPTIONS_KM } from "./geo";
+import { blockedUserIds } from "./blocks";
 
 export { LISTING_TYPES, CONDITIONS, STATUS_LABEL, typeLabel, conditionLabel, formatPrice } from "./listing-labels";
 
@@ -122,9 +123,11 @@ export async function browseListings(userId: string, params: BrowseParams = {}):
   const radius = params.radiusKm && RADIUS_OPTIONS_KM.includes(params.radiusKm as 1 | 5 | 10) ? params.radiusKm : undefined;
   const q = params.q?.trim().slice(0, 100);
 
+  const hidden = await blockedUserIds(userId);
   const where: Prisma.BookListingWhereInput = {
     status: "AVAILABLE",
     removedAt: null,
+    ...(hidden.length ? { ownerId: { notIn: hidden } } : {}),
     ...(params.type ? { type: params.type } : {}),
     ...(params.condition ? { condition: params.condition } : {}),
     ...(params.genreId ? { book: { genreId: params.genreId } } : {}),

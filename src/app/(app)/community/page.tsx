@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
+import { blockedUserIds } from "@/lib/blocks";
 import { Reveal } from "@/components/landing/reveal";
 import { EmptyState, PageHeader, Panel, SoonBadge } from "@/components/app/ui";
+import { CancelPledgeButton, PledgeForm } from "@/components/trust/pledge-form";
+import { DONATION_STATUS_LABEL, DONATION_STATUS_TINT, handoverLabel } from "@/lib/trust-labels";
 
 export const metadata: Metadata = { title: "Community" };
 
@@ -14,20 +18,27 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 export default async function CommunityPage() {
-  await requireUser();
+  const me = await requireUser();
+  const hidden = await blockedUserIds(me.id);
 
-  const [requests, institutions] = await Promise.all([
+  const [requests, institutions, myPledges] = await Promise.all([
     prisma.donationRequest.findMany({
-      where: { status: "OPEN", institution: { verificationStatus: "VERIFIED" } },
+      where: {
+        status: "OPEN",
+        institution: { verificationStatus: "VERIFIED", userId: { notIn: hidden } },
+      },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {
         id: true,
         title: true,
+        description: true,
         booksWanted: true,
         quantityGoal: true,
-        institution: { select: { name: true } },
+        dropOffInfo: true,
+        institution: { select: { name: true, userId: true, publicAddress: true, neighbourhood: true } },
         genres: { select: { id: true, name: true } },
+        donations: { where: { status: "RECEIVED" }, select: { quantity: true } },
       },
     }),
     prisma.institution.findMany({
@@ -35,6 +46,20 @@ export default async function CommunityPage() {
       orderBy: { name: "asc" },
       take: 6,
       select: { id: true, name: true, type: true, neighbourhood: true },
+    }),
+    prisma.donation.findMany({
+      where: { donorId: me.id },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+      select: {
+        id: true,
+        description: true,
+        quantity: true,
+        status: true,
+        handoverMethod: true,
+        scheduledAt: true,
+        donationRequest: { select: { title: true, dropOffInfo: true, institution: { select: { name: true, publicAddress: true } } } },
+      },
     }),
   ]);
 
@@ -68,9 +93,17 @@ export default async function CommunityPage() {
                     />
                     <p className="text-xs text-muted">{r.institution.name}</p>
                     <h4 className="heading mt-0.5 break-words font-semibold">{r.title}</h4>
+                    {r.description && <p className="mt-2 line-clamp-3 break-words text-sm text-muted">{r.description}</p>}
                     {r.booksWanted && <p className="mt-2 break-words text-sm">Wanted: {r.booksWanted}</p>}
                     {r.quantityGoal != null && (
-                      <p className="mt-1 text-sm text-muted">Goal: {r.quantityGoal} books</p>
+                      <p className="mt-1 text-sm text-muted">
+                        Goal: {r.quantityGoal} books · {r.donations.reduce((n, d) => n + d.quantity, 0)} received so far
+                      </p>
+                    )}
+                    {(r.dropOffInfo || r.institution.publicAddress) && (
+                      <p className="mt-1 break-words text-xs text-muted">
+                        Drop-off: {[r.institution.publicAddress, r.dropOffInfo].filter(Boolean).join(". ")}
+                      </p>
                     )}
                     {r.genres.length > 0 && (
                       <ul className="mt-3 flex flex-wrap gap-1.5">
@@ -81,6 +114,7 @@ export default async function CommunityPage() {
                         ))}
                       </ul>
                     )}
+                    {r.institution.userId !== me.id && <PledgeForm requestId={r.id} />}
                   </li>
                 ))}
               </ul>
@@ -88,6 +122,47 @@ export default async function CommunityPage() {
           </Panel>
         </div>
       </Reveal>
+
+      {myPledges.length > 0 && (
+        <Reveal delay={70}>
+          <div className="mt-4">
+            <Panel title="My pledges" tint="mint" icon="leaf">
+              <ul className="divide-y divide-border">
+                {myPledges.map((d) => (
+                  <li key={d.id} className="flex flex-wrap items-start justify-between gap-2 py-3">
+                    <div className="min-w-0">
+                      <p className="break-words text-sm">
+                        <span className="font-medium">
+                          {d.quantity} {d.quantity === 1 ? "book" : "books"}
+                        </span>{" "}
+                        for {d.donationRequest.institution.name}: {d.donationRequest.title}
+                      </p>
+                      <p className="break-words text-xs text-muted">
+                        {d.description} · {handoverLabel(d.handoverMethod)}
+                      </p>
+                      {d.status === "SCHEDULED" && d.scheduledAt && (
+                        <p className="mt-1 break-words text-xs">
+                          Drop-off on{" "}
+                          {d.scheduledAt.toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })}
+                          {d.donationRequest.institution.publicAddress && ` at ${d.donationRequest.institution.publicAddress}`}
+                        </p>
+                      )}
+                      {(d.status === "PLEDGED" || d.status === "SCHEDULED") && (
+                        <div className="mt-1">
+                          <CancelPledgeButton donationId={d.id} />
+                        </div>
+                      )}
+                    </div>
+                    <span className={`shrink-0 rounded-full border border-border px-2.5 py-0.5 text-xs ${DONATION_STATUS_TINT[d.status]}`}>
+                      {DONATION_STATUS_LABEL[d.status]}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          </div>
+        </Reveal>
+      )}
 
       <Reveal delay={80}>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -122,7 +197,9 @@ export default async function CommunityPage() {
               Institutional accounts are verified by BookLoop admins before they can post donation requests.
             </p>
           </div>
-          <SoonBadge phase={5} />
+          <Link href="/settings/institution" className="btn-secondary">
+            Register your institution
+          </Link>
         </div>
       </Reveal>
     </div>

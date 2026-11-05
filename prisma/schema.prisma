@@ -288,6 +288,8 @@ model Profile {
   latitude      Float?
   longitude     Float?
   locationUpdatedAt DateTime?
+  // PRIVATE: only used to send SMS notifications the user opted into.
+  phone         String?
   communityId   String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -59,3 +59,9 @@ export function relativeDate(d: Date, now = new Date()): string {
 export function shortDate(d: Date): string {
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
+
+/** Transaction status pill, showing "Expired" for cancelled transactions whose reservation ran out. */
+export function txStatusPill(status: string, reservationStatus?: string | null): { label: string; pill: string } {
+  if (status === "CANCELLED" && reservationStatus === "EXPIRED") return { label: "Expired", pill: NEUTRAL };
+  return TX_STATUS[status] ?? { label: status, pill: NEUTRAL };
+}

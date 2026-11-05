@@ -5,7 +5,9 @@ import { requireUser } from "@/lib/session";
 import { Reveal } from "@/components/landing/reveal";
 import { EmptyState, PageHeader, Panel, StatTile } from "@/components/app/ui";
 import { STATUS_LABEL, formatPrice, myListings } from "@/lib/listings";
-import { LISTING_STATUS, PLACEHOLDER_TINTS, REQUEST_STATUS, TX_STATUS, TYPE_LABEL, TYPE_PILL, relativeDate, shortDate } from "./labels";
+import { ACTIVE_TX, dueState, expireReservations } from "@/lib/transactions";
+import { CancelRequestButton, RequestDecision } from "@/components/requests/request-buttons";
+import { LISTING_STATUS, PLACEHOLDER_TINTS, REQUEST_STATUS, TX_STATUS, TYPE_LABEL, TYPE_PILL, relativeDate, shortDate, txStatusPill } from "./labels";
 
 export const metadata: Metadata = { title: "My activity" };
 
@@ -18,7 +20,6 @@ const TAB_LABEL: Record<Tab, string> = {
   history: "History",
 };
 
-const DAY = 24 * 60 * 60 * 1000;
 
 function Pill({ className, children }: { className: string; children: React.ReactNode }) {
   return (
@@ -32,12 +33,13 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const user = await requireUser();
   const sp = await searchParams;
   const tab: Tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "requests";
+  await expireReservations();
   const now = new Date();
 
   const bookSel = { select: { title: true, author: true } };
   const incomingWhere = { status: "PENDING" as const, listing: { ownerId: user.id } };
-  const borrowedWhere = { receiverId: user.id, type: "BORROW" as const, status: "HANDED_OVER" as const };
-  const lentWhere = { ownerId: user.id, status: "HANDED_OVER" as const };
+  const borrowedWhere = { receiverId: user.id, status: { in: ACTIVE_TX } };
+  const lentWhere = { ownerId: user.id, status: { in: ACTIVE_TX } };
   const myBooksWhere = { ownerId: user.id, status: { not: "REMOVED" as const } };
   const historyWhere = {
     status: { in: ["COMPLETED" as const, "CANCELLED" as const] },
@@ -68,13 +70,20 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         where: incomingWhere,
         orderBy: { createdAt: "desc" },
         take: 20,
-        include: { listing: { include: { book: bookSel } }, requester: { select: { username: true } } },
+        include: {
+          listing: { include: { book: bookSel } },
+          requester: { select: { username: true } },
+          offeredListing: { select: { id: true, book: bookSel } },
+        },
       }),
       prisma.request.findMany({
         where: { requesterId: user.id },
         orderBy: { createdAt: "desc" },
         take: 20,
-        include: { listing: { include: { book: bookSel, owner: { select: { username: true } } } } },
+        include: {
+          listing: { include: { book: bookSel, owner: { select: { username: true } } } },
+          transaction: { select: { id: true, status: true } },
+        },
       }),
     ]);
     content = (
@@ -85,17 +94,40 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
           ) : (
             <ul className="divide-y divide-border">
               {incoming.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    <p className="heading truncate font-semibold">{r.listing.book.title}</p>
-                    <p className="truncate text-sm text-muted">
-                      {r.listing.book.author} · from @{r.requester.username}
-                    </p>
+                <li key={r.id} className="py-4 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link href={`/books/${r.listingId}`} className="heading block truncate font-semibold hover:text-brand">
+                        {r.listing.book.title}
+                      </Link>
+                      <p className="truncate text-sm text-muted">
+                        from{" "}
+                        <Link href={`/u/${r.requester.username}`} className="hover:text-brand hover:underline">
+                          @{r.requester.username}
+                        </Link>
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Pill className={TYPE_PILL[r.type]}>{TYPE_LABEL[r.type]}</Pill>
+                      <span className="text-xs text-muted">{relativeDate(r.createdAt, now)}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Pill className={TYPE_PILL[r.type]}>{TYPE_LABEL[r.type]}</Pill>
-                    <Pill className={REQUEST_STATUS[r.status].pill}>{REQUEST_STATUS[r.status].label}</Pill>
-                    <span className="text-xs text-muted">{relativeDate(r.createdAt, now)}</span>
+                  {(r.proposedDays || r.offeredListing) && (
+                    <p className="mt-1.5 text-xs text-muted">
+                      {r.proposedDays ? `Wants it for ${r.proposedDays} days` : null}
+                      {r.offeredListing && (
+                        <>
+                          Offers{" "}
+                          <Link href={`/books/${r.offeredListing.id}`} className="font-medium text-fg underline underline-offset-2">
+                            {r.offeredListing.book.title}
+                          </Link>
+                        </>
+                      )}
+                    </p>
+                  )}
+                  {r.message && <p className="mt-2 line-clamp-3 rounded-lg bg-surface-2 px-3 py-2 text-sm [overflow-wrap:anywhere]">{r.message}</p>}
+                  <div className="mt-3">
+                    <RequestDecision requestId={r.id} compact />
                   </div>
                 </li>
               ))}
@@ -108,18 +140,35 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
           ) : (
             <ul className="divide-y divide-border">
               {outgoing.map((r) => (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-                  <div className="min-w-0">
-                    <p className="heading truncate font-semibold">{r.listing.book.title}</p>
-                    <p className="truncate text-sm text-muted">
-                      {r.listing.book.author} · owned by @{r.listing.owner.username}
-                    </p>
+                <li key={r.id} className="py-3 first:pt-0 last:pb-0">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <Link href={`/books/${r.listingId}`} className="heading block truncate font-semibold hover:text-brand">
+                        {r.listing.book.title}
+                      </Link>
+                      <p className="truncate text-sm text-muted">
+                        {r.listing.book.author} · owned by @{r.listing.owner.username}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Pill className={TYPE_PILL[r.type]}>{TYPE_LABEL[r.type]}</Pill>
+                      <Pill className={REQUEST_STATUS[r.status].pill}>{REQUEST_STATUS[r.status].label}</Pill>
+                      <span className="text-xs text-muted">{relativeDate(r.createdAt, now)}</span>
+                    </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Pill className={TYPE_PILL[r.type]}>{TYPE_LABEL[r.type]}</Pill>
-                    <Pill className={REQUEST_STATUS[r.status].pill}>{REQUEST_STATUS[r.status].label}</Pill>
-                    <span className="text-xs text-muted">{relativeDate(r.createdAt, now)}</span>
-                  </div>
+                  {r.status === "PENDING" && (
+                    <div className="mt-1">
+                      <CancelRequestButton requestId={r.id} />
+                    </div>
+                  )}
+                  {r.transaction && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <Link href={`/transactions/${r.transaction.id}`} className="btn-secondary px-3 py-1.5 text-sm">
+                        View hand-off
+                      </Link>
+                      <Pill className={TX_STATUS[r.transaction.status].pill}>{TX_STATUS[r.transaction.status].label}</Pill>
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -131,52 +180,81 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     const [borrowed, lent] = await Promise.all([
       prisma.transaction.findMany({
         where: borrowedWhere,
-        orderBy: { agreedDueDate: "asc" },
+        orderBy: { updatedAt: "desc" },
         take: 50,
-        include: { listing: { include: { book: bookSel } }, owner: { select: { username: true } } },
+        include: {
+          listing: { include: { book: bookSel } },
+          owner: { select: { username: true } },
+          reservations: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, expiresAt: true } },
+        },
       }),
       prisma.transaction.findMany({
         where: lentWhere,
-        orderBy: { agreedDueDate: "asc" },
+        orderBy: { updatedAt: "desc" },
         take: 50,
-        include: { listing: { include: { book: bookSel } }, receiver: { select: { username: true } } },
+        include: {
+          listing: { include: { book: bookSel } },
+          receiver: { select: { username: true } },
+          reservations: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true, expiresAt: true } },
+        },
       }),
     ]);
-    const duePill = (due: Date | null) => {
-      if (!due) return null;
-      if (due.getTime() < now.getTime()) return <Pill className="bg-danger-soft text-danger">Overdue</Pill>;
-      if (due.getTime() - now.getTime() <= 3 * DAY) return <Pill className="bg-butter">Due soon</Pill>;
-      return null;
+    type Row = {
+      id: string;
+      type: string;
+      status: (typeof borrowed)[number]["status"];
+      agreedDueDate: Date | null;
+      listing: { book: { title: string; author: string } };
+      reservations: { status: string; expiresAt: Date }[];
     };
-    const row = (
-      t: { id: string; agreedDueDate: Date | null; listing: { book: { title: string; author: string } } },
-      who: string,
-    ) => (
-      <li key={t.id} className="flex flex-wrap items-center justify-between gap-2 py-3 first:pt-0 last:pb-0">
-        <div className="min-w-0">
-          <p className="heading truncate font-semibold">{t.listing.book.title}</p>
-          <p className="truncate text-sm text-muted">
-            {t.listing.book.author} · {who}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {duePill(t.agreedDueDate)}
-          <span className="text-xs text-muted">{t.agreedDueDate ? `Due ${shortDate(t.agreedDueDate)}` : "No due date"}</span>
-        </div>
-      </li>
-    );
+    const row = (t: Row, who: string) => {
+      const due = dueState(t.agreedDueDate, t.status, now);
+      const res = t.reservations[0];
+      const hint =
+        t.status === "RESERVED"
+          ? res?.status === "CONFIRMED"
+            ? "Meet-up confirmed"
+            : res
+              ? `Reserved until ${shortDate(res.expiresAt)}`
+              : null
+          : t.agreedDueDate && t.status === "HANDED_OVER"
+            ? `Due ${shortDate(t.agreedDueDate)}`
+            : null;
+      return (
+        <li key={t.id}>
+          <Link
+            href={`/transactions/${t.id}`}
+            className="-mx-2 flex flex-wrap items-center justify-between gap-2 rounded-xl px-2 py-3 transition-colors hover:bg-surface-2"
+          >
+            <div className="min-w-0">
+              <p className="heading truncate font-semibold">{t.listing.book.title}</p>
+              <p className="truncate text-sm text-muted">
+                {t.listing.book.author} · {who}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Pill className={TYPE_PILL[t.type]}>{TYPE_LABEL[t.type]}</Pill>
+              <Pill className={TX_STATUS[t.status].pill}>{TX_STATUS[t.status].label}</Pill>
+              {due === "overdue" && <Pill className="bg-danger-soft text-danger">Overdue</Pill>}
+              {due === "soon" && <Pill className="bg-butter">Due soon</Pill>}
+              {hint && <span className="text-xs text-muted">{hint}</span>}
+            </div>
+          </Link>
+        </li>
+      );
+    };
     content = (
       <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Borrowed by me" tint="mint" icon="book">
+        <Panel title="Coming to me" tint="mint" icon="book">
           {borrowed.length === 0 ? (
-            <EmptyState icon="book">You aren&apos;t borrowing anything at the moment.</EmptyState>
+            <EmptyState icon="book">Nothing on its way to you right now. Accepted requests and loans show up here.</EmptyState>
           ) : (
             <ul className="divide-y divide-border">{borrowed.map((t) => row(t, `from @${t.owner.username}`))}</ul>
           )}
         </Panel>
-        <Panel title="Lent by me" tint="lavender" icon="heart">
+        <Panel title="Going out from me" tint="lavender" icon="heart">
           {lent.length === 0 ? (
-            <EmptyState icon="heart">None of your books are out on loan.</EmptyState>
+            <EmptyState icon="heart">None of your books are reserved or out on loan.</EmptyState>
           ) : (
             <ul className="divide-y divide-border">{lent.map((t) => row(t, `with @${t.receiver.username}`))}</ul>
           )}
@@ -263,30 +341,47 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         listing: { include: { book: bookSel } },
         owner: { select: { username: true } },
         receiver: { select: { username: true } },
+        reservations: { orderBy: { createdAt: "desc" }, take: 1, select: { status: true } },
       },
     });
     content = (
       <Panel title="Past hand-offs" tint="rose" icon="clock">
         {history.length === 0 ? (
-          <EmptyState icon="clock">No finished hand-offs yet. Completed and cancelled ones will appear here.</EmptyState>
+          <EmptyState icon="clock">No finished hand-offs yet. Completed, cancelled and expired ones will appear here.</EmptyState>
         ) : (
           <ol className="relative">
             {history.map((t, i) => {
               const iOwn = t.ownerId === user.id;
               const other = iOwn ? t.receiver.username : t.owner.username;
               const date = t.completedAt ?? t.cancelledAt ?? t.updatedAt;
+              const pill = txStatusPill(t.status, t.reservations[0]?.status);
+              const verb =
+                t.status === "COMPLETED"
+                  ? t.type === "BORROW"
+                    ? iOwn
+                      ? "Lent to"
+                      : "Borrowed from"
+                    : iOwn
+                      ? "Gave to"
+                      : "Received from"
+                  : iOwn
+                    ? "With"
+                    : "From";
               return (
                 <li key={t.id} className="relative flex gap-4 pb-6 last:pb-0">
                   {i < history.length - 1 && <span className="absolute bottom-0 left-[5px] top-3 w-px bg-border" aria-hidden="true" />}
                   <span className="relative mt-1.5 h-3 w-3 shrink-0 rounded-full border-2 border-brand bg-surface" aria-hidden="true" />
                   <div className="min-w-0">
                     <p className="font-mono text-xs text-muted">{shortDate(date)}</p>
-                    <p className="heading truncate font-semibold">{t.listing.book.title}</p>
+                    <Link href={`/transactions/${t.id}`} className="heading block truncate font-semibold hover:text-brand">
+                      {t.listing.book.title}
+                    </Link>
                     <p className="flex flex-wrap items-center gap-2 text-sm text-muted">
                       <span>
-                        {iOwn ? "Gave to" : "Received from"} @{other}
+                        {verb} @{other}
                       </span>
-                      <Pill className={TX_STATUS[t.status].pill}>{TX_STATUS[t.status].label}</Pill>
+                      <Pill className={TYPE_PILL[t.type]}>{TYPE_LABEL[t.type]}</Pill>
+                      <Pill className={pill.pill}>{pill.label}</Pill>
                     </p>
                   </div>
                 </li>
@@ -308,7 +403,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <StatTile label="Requests to review" value={toReview} tint="peach" tilt={-1} />
           <StatTile label="My pending requests" value={myPending} tint="sky" tilt={1} />
-          <StatTile label="Active borrowings" value={borrowedCount} tint="mint" tilt={-0.5} />
+          <StatTile label="Active hand-offs" value={borrowedCount + lentCount} tint="mint" tilt={-0.5} />
           <StatTile label="Books I've listed" value={booksCount} tint="butter" tilt={1} />
         </div>
       </Reveal>
