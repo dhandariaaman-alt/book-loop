@@ -99,3 +99,66 @@ body {
     @apply font-serif tracking-tight;
   }
 }
+
+/* ───────────── Landing page animations ───────────── */
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes marquee-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+  50% { transform: translateY(-14px) rotate(var(--r, 0deg)); }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.92) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes word-in {
+  from { opacity: 0; transform: translateY(0.6em) rotateX(-60deg); filter: blur(4px); }
+  to { opacity: 1; transform: translateY(0) rotateX(0); filter: blur(0); }
+}
+@keyframes progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+@keyframes blob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.08); }
+  66% { transform: translate(-20px, 20px) scale(0.95); }
+}
+
+.animate-marquee { animation: marquee var(--duration, 60s) linear infinite; }
+.animate-marquee-reverse { animation: marquee-reverse var(--duration, 60s) linear infinite; }
+.animate-float { animation: float var(--float-duration, 6s) ease-in-out infinite; }
+.animate-fade-up { animation: fade-up 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.animate-pop-in { animation: pop-in 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+.animate-word-in { animation: word-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+.animate-progress { animation: progress var(--duration, 5s) linear both; transform-origin: left; }
+.animate-blob { animation: blob 18s ease-in-out infinite; }
+.pause-on-hover:hover .animate-marquee,
+.pause-on-hover:hover .animate-marquee-reverse,
+.pause-on-hover:focus-within .animate-marquee,
+.pause-on-hover:focus-within .animate-marquee-reverse { animation-play-state: paused; }
+
+/* Scroll reveal: <Reveal> adds .is-visible when in view */
+.reveal { opacity: 0; transform: translateY(28px); transition: opacity 0.8s cubic-bezier(0.2, 0.7, 0.2, 1), transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1); transition-delay: var(--delay, 0ms); }
+.reveal.is-visible { opacity: 1; transform: none; }
+
+.mask-fade-x { mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent); }
+
+dialog::backdrop { background: rgb(0 0 0 / 0.55); backdrop-filter: blur(4px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee, .animate-marquee-reverse, .animate-float, .animate-fade-up, .animate-pop-in,
+  .animate-word-in, .animate-progress, .animate-blob { animation: none !important; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
