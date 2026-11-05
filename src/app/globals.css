@@ -209,6 +209,13 @@ body {
 
 dialog::backdrop { background: rgb(0 0 0 / 0.55); backdrop-filter: blur(4px); }
 
+/* Hold landing entrances at their start state until the book intro finishes. */
+html[data-intro="playing"] .animate-fade-up,
+html[data-intro="playing"] .animate-word-in,
+html[data-intro="playing"] .animate-pop-in,
+html[data-intro="playing"] .reveal.is-visible .stamp { animation-play-state: paused; }
+html[data-intro="playing"] .reveal.is-visible { opacity: 0; transform: translateY(28px); }
+
 @media (prefers-reduced-motion: reduce) {
   .animate-marquee, .animate-marquee-reverse, .animate-float, .animate-fade-up, .animate-pop-in,
   .animate-word-in, .animate-progress, .animate-blob,

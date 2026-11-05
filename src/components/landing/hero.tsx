@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { FAMOUS_BOOKS } from "@/lib/famous-books";
 import { BookCover } from "@/components/landing/book-cover";
+import { onIntroDone } from "@/lib/intro";
 
 const WORDS = ["reader.", "chapter.", "home.", "neighbour."];
 
@@ -38,8 +39,14 @@ export function Hero() {
   useEffect(() => {
     reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduced.current) return;
-    const t = setInterval(() => setWordIdx((i) => (i + 1) % WORDS.length), 2200);
-    return () => clearInterval(t);
+    let t: ReturnType<typeof setInterval> | undefined;
+    const off = onIntroDone(() => {
+      t = setInterval(() => setWordIdx((i) => (i + 1) % WORDS.length), 2200);
+    });
+    return () => {
+      off();
+      clearInterval(t);
+    };
   }, []);
 
   function onMove(e: React.PointerEvent<HTMLDivElement>) {
