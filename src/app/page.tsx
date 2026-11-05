@@ -6,6 +6,7 @@ import { WaysToShare } from "@/components/landing/ways-to-share";
 import { HowItWorks } from "@/components/landing/how-it-works";
 import { FinalCta } from "@/components/landing/final-cta";
 import { Doodle, WaveDivider } from "@/components/landing/decorations";
+import { AutoScroll } from "@/components/landing/auto-scroll";
 
 export default async function Home() {
   const session = await auth();
@@ -13,6 +14,7 @@ export default async function Home() {
 
   return (
     <div className="overflow-x-clip">
+      <AutoScroll />
       {/* Hero on dotted paper */}
       <div className="dot-grid relative">
         <Hero />
