@@ -1,5 +1,6 @@
-// Well-known books for the landing page shelves. Cover images come from Open Library's
-// free Covers API; the colours and pattern are a drawn fallback if an image fails to load.
+// Books for the landing page shelves. Cover images come from Open Library's free
+// Covers API (coverId) or from /public (coverSrc); the colours and pattern are a
+// drawn fallback if an image fails to load.
 // Blurbs are our own one-line summaries.
 
 export type ShelfGenre = "Classics" | "Fantasy" | "Indian voices" | "Non-fiction" | "Sci-fi & dystopia";
@@ -7,7 +8,8 @@ export type ShelfGenre = "Classics" | "Fantasy" | "Indian voices" | "Non-fiction
 export type FamousBook = {
   title: string;
   author: string;
-  year: number;
+  /** Omitted when unknown. */
+  year?: number;
   genre: ShelfGenre;
   blurb: string;
   color: string;
@@ -15,11 +17,14 @@ export type FamousBook = {
   pattern: "stripes" | "sun" | "frame" | "waves" | "dots" | "diamond";
   /** Open Library cover ID: https://covers.openlibrary.org/b/id/{coverId}-M.jpg */
   coverId?: number;
+  /** Local cover image under /public, used instead of Open Library. */
+  coverSrc?: string;
 };
 
 export const SHELF_GENRES: ShelfGenre[] = ["Classics", "Fantasy", "Indian voices", "Non-fiction", "Sci-fi & dystopia"];
 
 export const FAMOUS_BOOKS: FamousBook[] = [
+  { title: "Magic of Seven Notes", coverSrc: "/covers/magic-of-seven-notes.webp", author: "Naman Dhandaria", genre: "Indian voices", blurb: "A novel of love and music, set under a moonlit sky.", color: "#2c3366", ink: "#ffffff", pattern: "dots" },
   { title: "Pride and Prejudice", coverId: 14543311, author: "Jane Austen", year: 1813, genre: "Classics", blurb: "Wit, first impressions and the long road to understanding someone.", color: "#7a2e3a", ink: "#f6e7d8", pattern: "frame" },
   { title: "1984", coverId: 15196195, author: "George Orwell", year: 1949, genre: "Sci-fi & dystopia", blurb: "A chilling look at surveillance, truth and the freedom to think.", color: "#1f2933", ink: "#e85d4a", pattern: "stripes" },
   { title: "To Kill a Mockingbird", coverId: 14351077, author: "Harper Lee", year: 1960, genre: "Classics", blurb: "Justice and childhood seen through the eyes of a small-town girl.", color: "#3d5a40", ink: "#f2e9d0", pattern: "sun" },

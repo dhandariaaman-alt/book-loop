@@ -173,7 +173,8 @@ export function BookShelves() {
                 </span>
                 <h3 className="heading mt-2 text-2xl">{selected.title}</h3>
                 <p className="mt-1 text-sm text-muted">
-                  by {selected.author} · {selected.year}
+                  by {selected.author}
+                  {selected.year ? ` · ${selected.year}` : ""}
                 </p>
                 <p className="mt-3 text-sm leading-relaxed">{selected.blurb}</p>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5 text-xs text-muted sm:justify-start">

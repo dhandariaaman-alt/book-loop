@@ -9,11 +9,11 @@ import { onIntroDone } from "@/lib/intro";
 const WORDS = ["reader.", "chapter.", "home.", "neighbour."];
 
 const STACK = [
-  { idx: 0, rot: -10, dur: 6.5, delay: 0, x: -150, y: 30, depth: 0.6, z: 1 },
-  { idx: 4, rot: -5, dur: 7.5, delay: -1.5, x: -70, y: -20, depth: 0.9, z: 2 },
-  { idx: 7, rot: 0, dur: 5.5, delay: -3, x: 0, y: 50, depth: 1.3, z: 3 },
-  { idx: 9, rot: 6, dur: 8, delay: -2, x: 80, y: -30, depth: 1.0, z: 2 },
-  { idx: 16, rot: 10, dur: 6, delay: -4, x: 150, y: 40, depth: 0.7, z: 1 },
+  { idx: 1, rot: -10, dur: 6.5, delay: 0, x: -150, y: 30, depth: 0.6, z: 1 },
+  { idx: 5, rot: -5, dur: 7.5, delay: -1.5, x: -70, y: -20, depth: 0.9, z: 2 },
+  { idx: 8, rot: 0, dur: 5.5, delay: -3, x: 0, y: 50, depth: 1.3, z: 3 },
+  { idx: 10, rot: 6, dur: 8, delay: -2, x: 80, y: -30, depth: 1.0, z: 2 },
+  { idx: 17, rot: 10, dur: 6, delay: -4, x: 150, y: 40, depth: 0.7, z: 1 },
 ];
 
 const TRUST = [

@@ -42,10 +42,10 @@ export function BookCover({ book, size = "md", className = "" }: { book: FamousB
           {book.author}
         </p>
       </div>
-      {book.coverId && status !== "failed" && (
+      {(book.coverSrc || book.coverId) && status !== "failed" && (
         <img
           ref={imgRef}
-          src={`https://covers.openlibrary.org/b/id/${book.coverId}-${s.img}.jpg`}
+          src={book.coverSrc ?? `https://covers.openlibrary.org/b/id/${book.coverId}-${s.img}.jpg`}
           alt=""
           width={s.w}
           height={s.h}
