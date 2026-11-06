@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/avatar";
 import { Doodle } from "@/components/landing/decorations";
@@ -27,7 +27,7 @@ const TYPE_LABEL = { BORROW: "Borrow", EXCHANGE: "Exchange", GIVEAWAY: "Free", S
 
 export default async function PublicProfilePage({ params }: Params) {
   const { username } = await params;
-  const session = await auth();
+  const session = await getSession();
 
   // Select public fields only. Never coordinates, email or address.
   const user = await prisma.user.findUnique({

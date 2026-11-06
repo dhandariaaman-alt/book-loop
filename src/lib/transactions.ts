@@ -313,3 +313,14 @@ export function dueState(due: Date | null, status: TransactionStatus, now = new 
   if (diff <= 3 * DAY_MS) return "soon";
   return null;
 }
+
+// Page views call this instead of expireReservations(): expiry is measured in hours,
+// so checking at most once a minute per server is plenty and saves a query per view.
+// The cron route and request actions still call expireReservations() directly.
+let lastLazyExpiry = 0;
+export async function expireReservationsLazily(): Promise<void> {
+  const now = Date.now();
+  if (now - lastLazyExpiry < 60_000) return;
+  lastLazyExpiry = now;
+  await expireReservations();
+}

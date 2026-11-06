@@ -118,12 +118,12 @@ async function viewerLocation(userId: string) {
 
 /** Available listings, filtered and sorted for the Discover page. */
 export async function browseListings(userId: string, params: BrowseParams = {}): Promise<{ items: ListingCard[]; hasLocation: boolean }> {
-  const viewer = await viewerLocation(userId);
+  // Location and block list are independent: fetch them together.
+  const [viewer, hidden] = await Promise.all([viewerLocation(userId), blockedUserIds(userId)]);
   const hasLocation = viewer.lat != null && viewer.lng != null;
   const radius = params.radiusKm && (RADIUS_OPTIONS_KM as readonly number[]).includes(params.radiusKm) ? params.radiusKm : undefined;
   const q = params.q?.trim().slice(0, 100);
 
-  const hidden = await blockedUserIds(userId);
   const where: Prisma.BookListingWhereInput = {
     status: "AVAILABLE",
     removedAt: null,

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, googleEnabled } from "@/auth";
+import { googleEnabled } from "@/auth";
+import { getSession } from "@/lib/session";
 import { googleSignInAction } from "@/app/actions/auth";
 import { AuthShell, GoogleIcon } from "@/components/auth-shell";
 import { safeRedirect } from "@/lib/validation";
@@ -22,7 +23,7 @@ export default async function LoginPage({
 }) {
   const { callbackUrl, error } = await searchParams;
   const redirectTo = safeRedirect(callbackUrl);
-  if ((await auth())?.user) redirect(redirectTo);
+  if ((await getSession())?.user) redirect(redirectTo);
 
   return (
     <AuthShell title="Welcome back" subtitle="Sign in to see books near you.">

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { auth } from "@/auth";
+import { getSession } from "@/lib/session";
 import { signOutAction } from "@/app/actions/auth";
 import { Avatar } from "./avatar";
 import { Logo } from "./logo";
@@ -32,7 +32,7 @@ async function NotificationBell({ userId }: { userId: string }) {
 }
 
 export async function Navbar() {
-  const session = await auth();
+  const session = await getSession();
   const user = session?.user;
 
   return (

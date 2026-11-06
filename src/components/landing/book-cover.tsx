@@ -15,7 +15,18 @@ const SIZES = {
  * A book cover: the real cover from Open Library when available, otherwise a drawn one.
  * Purely visual; wrap it in a button to make it interactive.
  */
-export function BookCover({ book, size = "md", className = "" }: { book: FamousBook; size?: keyof typeof SIZES; className?: string }) {
+export function BookCover({
+  book,
+  size = "md",
+  className = "",
+  priority = false,
+}: {
+  book: FamousBook;
+  size?: keyof typeof SIZES;
+  className?: string;
+  /** Load immediately (above the fold). Otherwise the image loads as it scrolls into view. */
+  priority?: boolean;
+}) {
   const s = SIZES[size];
   const [status, setStatus] = useState<"loading" | "loaded" | "failed">("loading");
   const imgRef = useRef<HTMLImageElement>(null);
@@ -50,6 +61,8 @@ export function BookCover({ book, size = "md", className = "" }: { book: FamousB
           width={s.w}
           height={s.h}
           decoding="async"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : "low"}
           draggable={false}
           onError={() => setStatus("failed")}
           // Open Library returns a 1x1 image when a cover is missing.

@@ -178,7 +178,7 @@ export function Hero() {
                       } as CSSProperties
                     }
                   >
-                    <BookCover book={book} size="md" />
+                    <BookCover book={book} size="md" priority />
                   </div>
                 </div>
               );

@@ -1,4 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
+import { cardImageUrl } from "@/lib/listing-labels";
 import Link from "next/link";
 import { formatPrice, typeLabel, type ListingCard as Card } from "@/lib/listings";
 import { formatDistance } from "@/lib/geo";
@@ -48,7 +49,7 @@ export function ListingCard({ card }: { card: Card; index?: number }) {
       <div className="relative aspect-[2/3] overflow-hidden rounded-l-[4px] rounded-r-xl shadow-[inset_4px_0_0_rgba(0,0,0,0.08),2px_3px_8px_rgba(0,0,0,0.12)]">
         <div className="h-full w-full transition-transform duration-300 motion-safe:group-hover:scale-[1.03]" style={{ containerType: "inline-size" }}>
           {card.imageUrl ? (
-            <img src={card.imageUrl} alt={`Cover of ${card.title}`} loading="lazy" className="h-full w-full object-cover" />
+            <img src={cardImageUrl(card.imageUrl)} alt={`Cover of ${card.title}`} loading="lazy" decoding="async" width={180} height={270} className="h-full w-full object-cover" />
           ) : (
             <DrawnCover title={card.title} author={card.author} />
           )}

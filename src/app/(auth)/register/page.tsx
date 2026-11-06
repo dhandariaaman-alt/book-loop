@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { auth, googleEnabled } from "@/auth";
+import { googleEnabled } from "@/auth";
+import { getSession } from "@/lib/session";
 import { googleSignInAction } from "@/app/actions/auth";
 import { AuthShell, GoogleIcon } from "@/components/auth-shell";
 import { RegisterForm } from "./register-form";
@@ -9,7 +10,7 @@ import { RegisterForm } from "./register-form";
 export const metadata: Metadata = { title: "Create account" };
 
 export default async function RegisterPage() {
-  if ((await auth())?.user) redirect("/dashboard");
+  if ((await getSession())?.user) redirect("/dashboard");
 
   return (
     <AuthShell title="Join BookLoop" subtitle="Start sharing books with people nearby.">

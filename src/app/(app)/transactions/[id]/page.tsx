@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getOrCreateConversation } from "@/lib/conversations";
 import {
   dueState,
-  expireReservations,
+  expireReservationsLazily,
   formatDate,
   formatDateTime,
   getTransactionForViewer,
@@ -143,7 +143,7 @@ function Timeline({ steps, active }: { steps: Step[]; active: boolean }) {
 
 export default async function TransactionPage({ params }: Props) {
   const [{ id }, me] = await Promise.all([params, requireUser()]);
-  await expireReservations();
+  await expireReservationsLazily();
   const t = await getTransactionForViewer(id, me.id);
   if (!t) notFound();
 

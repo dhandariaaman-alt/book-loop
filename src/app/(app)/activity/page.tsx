@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/session";
 import { Reveal } from "@/components/landing/reveal";
 import { EmptyState, PageHeader, Panel, StatTile } from "@/components/app/ui";
 import { STATUS_LABEL, formatPrice, myListings } from "@/lib/listings";
-import { ACTIVE_TX, dueState, expireReservations } from "@/lib/transactions";
+import { ACTIVE_TX, dueState, expireReservationsLazily } from "@/lib/transactions";
 import { CancelRequestButton, RequestDecision } from "@/components/requests/request-buttons";
 import { LISTING_STATUS, PLACEHOLDER_TINTS, REQUEST_STATUS, TX_STATUS, TYPE_LABEL, TYPE_PILL, relativeDate, shortDate, txStatusPill } from "./labels";
 
@@ -33,7 +33,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
   const user = await requireUser();
   const sp = await searchParams;
   const tab: Tab = (TABS as readonly string[]).includes(sp.tab ?? "") ? (sp.tab as Tab) : "requests";
-  await expireReservations();
+  await expireReservationsLazily();
   const now = new Date();
 
   const bookSel = { select: { title: true, author: true } };

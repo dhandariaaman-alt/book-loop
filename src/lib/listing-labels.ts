@@ -38,3 +38,7 @@ export function formatPrice(paise: number | null | undefined) {
 /** True for published covers we looked up (Open Library) rather than photos the owner uploaded. */
 export const isStockCover = (url: string | null | undefined) =>
   Boolean(url && url.startsWith("https://covers.openlibrary.org/"));
+
+/** Smaller Open Library cover for small cards (L is about 3x the bytes of M). Other URLs unchanged. */
+export const cardImageUrl = (url: string) =>
+  isStockCover(url) ? url.replace(/-L\.jpg$/, "-M.jpg") : url;
