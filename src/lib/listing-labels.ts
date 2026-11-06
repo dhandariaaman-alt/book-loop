@@ -34,3 +34,7 @@ export function formatPrice(paise: number | null | undefined) {
   if (paise == null) return null;
   return `₹${(paise / 100).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
 }
+
+/** True for published covers we looked up (Open Library) rather than photos the owner uploaded. */
+export const isStockCover = (url: string | null | undefined) =>
+  Boolean(url && url.startsWith("https://covers.openlibrary.org/"));

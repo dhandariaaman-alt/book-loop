@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/session";
 import { rateLimit } from "@/lib/rate-limit";
 import { listingSchema, type ListingInput } from "@/lib/listings";
 import { saveImage, UploadError } from "@/lib/storage";
+import { findCoverUrl } from "@/lib/covers";
 import type { FormState } from "./auth";
 
 const MAX_PHOTOS = 4;
@@ -85,6 +86,11 @@ export async function createListingAction(_prev: FormState, formData: FormData):
     throw e;
   }
   if (urls.length === 0 && d.coverUrl) urls = [d.coverUrl];
+  // No photo and no picked result: look up the book's real cover automatically.
+  if (urls.length === 0) {
+    const found = await findCoverUrl(d.title, d.author, d.isbn);
+    if (found) urls = [found];
+  }
 
   const bookId = await findOrCreateBook(d);
   const listing = await prisma.bookListing.create({
@@ -136,6 +142,10 @@ export async function updateListingAction(id: string, _prev: FormState, formData
     throw e;
   }
   if (keepCount === 0 && urls.length === 0 && d.coverUrl) urls = [d.coverUrl];
+  if (keepCount === 0 && urls.length === 0) {
+    const found = await findCoverUrl(d.title, d.author, d.isbn);
+    if (found) urls = [found];
+  }
 
   const bookId = await findOrCreateBook(d);
   await prisma.$transaction([

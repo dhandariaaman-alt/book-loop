@@ -120,7 +120,7 @@ async function viewerLocation(userId: string) {
 export async function browseListings(userId: string, params: BrowseParams = {}): Promise<{ items: ListingCard[]; hasLocation: boolean }> {
   const viewer = await viewerLocation(userId);
   const hasLocation = viewer.lat != null && viewer.lng != null;
-  const radius = params.radiusKm && RADIUS_OPTIONS_KM.includes(params.radiusKm as 1 | 5 | 10) ? params.radiusKm : undefined;
+  const radius = params.radiusKm && (RADIUS_OPTIONS_KM as readonly number[]).includes(params.radiusKm) ? params.radiusKm : undefined;
   const q = params.q?.trim().slice(0, 100);
 
   const hidden = await blockedUserIds(userId);

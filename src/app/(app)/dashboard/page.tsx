@@ -4,20 +4,28 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/session";
 import { Doodle } from "@/components/landing/decorations";
 import { Reveal } from "@/components/landing/reveal";
-import { Icon, PageHeader, SectionTitle, StatTile, TINT_BG, deep, type IconKind, type Tint } from "@/components/app/ui";
+import { EmptyState, Icon, PageHeader, SectionTitle, StatTile, TINT_BG, deep, type IconKind, type Tint } from "@/components/app/ui";
+import { ListingCard } from "@/components/listings/listing-card";
+import { browseListings } from "@/lib/listings";
+import { HOME_RADIUS_KM } from "@/lib/geo";
 
 export const metadata: Metadata = { title: "Home" };
 
 const PILL =
   "inline-flex items-center rounded-full border border-border px-4 py-2 text-sm font-medium text-fg transition hover:-translate-y-0.5 hover:shadow-sm";
 
-export default async function DashboardPage() {
+const NEARBY_SHOWN = 12;
+
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const me = await requireUser();
   const now = new Date();
   const soon = new Date(now.getTime() + 3 * 24 * 60 * 60_000);
+  const rawQ = (await searchParams).q;
+  const q = (Array.isArray(rawQ) ? rawQ[0] : rawQ)?.trim().slice(0, 100) || "";
 
-  const [profile, incoming, outgoing, myListings, activeBorrowings, overdue, dueSoon, donationRequests] =
+  const [nearby, profile, incoming, outgoing, myListings, activeBorrowings, overdue, dueSoon, donationRequests] =
     await Promise.all([
+      browseListings(me.id, { q: q || undefined, radiusKm: HOME_RADIUS_KM, sort: "near", take: 60 }),
       prisma.profile.findUnique({ where: { userId: me.id }, select: { latitude: true, neighbourhood: true } }),
       prisma.request.count({ where: { status: "PENDING", listing: { ownerId: me.id } } }),
       prisma.request.count({ where: { status: "PENDING", requesterId: me.id } }),
@@ -38,6 +46,12 @@ export default async function DashboardPage() {
     ]);
 
   const firstName = me.name?.split(" ")[0] ?? me.username;
+  // Other people's books (your own are in My activity).
+  const nearbyBooks = nearby.items.filter((b) => !b.isMine);
+  const discoverHref = `/discover?${new URLSearchParams({
+    ...(q ? { q } : {}),
+    ...(nearby.hasLocation ? { radius: String(HOME_RADIUS_KM), sort: "near" } : {}),
+  })}`;
 
   const stats: { label: string; value: number; tint: Tint }[] = [
     { label: "Requests to review", value: incoming, tint: "mint" },
@@ -65,7 +79,7 @@ export default async function DashboardPage() {
       tint: "rose",
       icon: "heart",
     },
-    { href: "/messages", title: "Messages", desc: "Chat with readers · Phase 4", tint: "sky", icon: "chat" },
+    { href: "/messages", title: "Messages", desc: "Chat with readers about requests", tint: "sky", icon: "chat" },
   ];
 
   return (
@@ -79,6 +93,97 @@ export default async function DashboardPage() {
           />
           <Doodle kind="sparkle" className="-top-2 right-0 hidden w-7 md:block" color="var(--accent)" fill="var(--butter)" animation="twinkle" />
         </div>
+      </Reveal>
+
+      {/* Search */}
+      <Reveal delay={40}>
+        <form method="get" action="/dashboard" role="search" className="mt-6 flex gap-2">
+          <label htmlFor="home-q" className="sr-only">
+            Search books near you
+          </label>
+          <div className="relative min-w-0 flex-1">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-muted">
+              <Icon kind="search" />
+            </span>
+            <input
+              id="home-q"
+              name="q"
+              type="search"
+              defaultValue={q}
+              placeholder="Search by title or author"
+              autoComplete="off"
+              className="input h-12 pl-11 text-base"
+            />
+          </div>
+          <button type="submit" className="btn-primary h-12 px-5">
+            Search
+          </button>
+        </form>
+      </Reveal>
+
+      {/* Books near you */}
+      <Reveal delay={80}>
+        <SectionTitle
+          action={
+            nearbyBooks.length > 0 ? (
+              <Link href={discoverHref} className="text-sm text-brand hover:underline">
+                More filters →
+              </Link>
+            ) : undefined
+          }
+        >
+          {q ? `Results for “${q}”` : nearby.hasLocation ? "Books near you" : "Newest books"}
+        </SectionTitle>
+        <p className="mt-1 text-sm text-muted">
+          {nearby.hasLocation
+            ? `Available within ${HOME_RADIUS_KM} km${profile?.neighbourhood ? ` of ${profile.neighbourhood}` : ""}, nearest first.`
+            : "Set your area to see books within 20 km of you."}
+          {q && (
+            <>
+              {" "}
+              <Link href="/dashboard" className="text-brand hover:underline">
+                Clear search
+              </Link>
+            </>
+          )}
+        </p>
+
+        {nearbyBooks.length > 0 ? (
+          <ul className="mt-4 grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 lg:grid-cols-4">
+            {nearbyBooks.slice(0, NEARBY_SHOWN).map((card, i) => (
+              <li key={card.id} className="min-w-0">
+                <ListingCard card={card} index={i} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="mt-4">
+            <EmptyState icon={q ? "search" : "book"}>
+              {q ? (
+                <>
+                  No books matching “{q}” within {HOME_RADIUS_KM} km.{" "}
+                  <Link href={`/discover?q=${encodeURIComponent(q)}`} className="text-brand hover:underline">
+                    Search everywhere
+                  </Link>
+                </>
+              ) : (
+                <>
+                  No books listed near you yet.{" "}
+                  <Link href="/books/new" className="text-brand hover:underline">
+                    Be the first to list one
+                  </Link>
+                </>
+              )}
+            </EmptyState>
+          </div>
+        )}
+        {nearbyBooks.length > NEARBY_SHOWN && (
+          <p className="mt-5 text-center">
+            <Link href={discoverHref} className="btn-secondary">
+              See all {nearbyBooks.length} books
+            </Link>
+          </p>
+        )}
       </Reveal>
 
       {profile?.latitude == null && (

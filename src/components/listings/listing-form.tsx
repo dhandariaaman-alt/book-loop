@@ -5,7 +5,7 @@ import { useActionState, useCallback, useEffect, useId, useRef, useState } from 
 import type { BookCondition, ListingType } from "@prisma/client";
 import type { FormState } from "@/app/actions/auth";
 import { FormMessage, SubmitButton } from "@/components/form-bits";
-import { CONDITIONS } from "@/lib/listing-labels";
+import { CONDITIONS, isStockCover } from "@/lib/listing-labels";
 
 type Genre = { id: string; name: string };
 
@@ -176,6 +176,8 @@ export function ListingForm({ genres, action, initial, submitLabel, cancelHref =
 
   const keptCount = existing.filter((i) => !removed.includes(i.id)).length;
   const total = keptCount + photos.length;
+  // Photos of the owner's actual copy (looked-up publisher covers don't count).
+  const ownPhotoCount = existing.filter((i) => !removed.includes(i.id) && !isStockCover(i.url)).length + photos.length;
   const room = Math.max(0, MAX_PHOTOS - total);
 
   // Keep the real file input in sync with our list (also after React resets the form).
@@ -562,6 +564,21 @@ export function ListingForm({ genres, action, initial, submitLabel, cancelHref =
               </li>
             )}
           </ul>
+        )}
+
+        {ownPhotoCount === 0 && (
+          <p role="note" className="flex items-start gap-2 rounded-lg border border-border bg-butter px-3 py-2.5 text-sm">
+            <svg viewBox="0 0 20 20" className="mt-0.5 h-4 w-4 shrink-0 text-accent" fill="currentColor" aria-hidden>
+              <path d="M10 2 1 18h18L10 2Zm0 5.5c.5 0 .9.4.9.9v4.2a.9.9 0 0 1-1.8 0V8.4c0-.5.4-.9.9-.9Zm0 8.6a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Z" />
+            </svg>
+            <span>
+              <span className="font-medium">No photo of your copy yet.</span>{" "}
+              {showLookupCover || existing.some((i) => !removed.includes(i.id))
+                ? "Readers will see the published cover."
+                : "We'll add the book's published cover if we can find it."}{" "}
+              A quick photo shows its real condition and usually gets more requests.
+            </span>
+          </p>
         )}
 
         <label

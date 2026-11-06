@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { conditionLabel, getListing, STATUS_LABEL } from "@/lib/listings";
+import { isStockCover } from "@/lib/listing-labels";
 import { formatDistance } from "@/lib/geo";
 import { prisma } from "@/lib/prisma";
 import { Avatar } from "@/components/avatar";
@@ -64,11 +65,33 @@ export default async function BookPage({ params, searchParams }: Props) {
       )}
 
       <div className="mt-6 grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
-        <Gallery
-          images={book.images}
-          title={book.title}
-          fallback={<DrawnCover title={book.title} author={book.author} />}
-        />
+        <div className="min-w-0">
+          <Gallery
+            images={book.images}
+            title={book.title}
+            fallback={<DrawnCover title={book.title} author={book.author} />}
+          />
+          {!book.images.some((i) => !isStockCover(i.url)) && (
+            <p className="mt-3 flex items-start gap-2 rounded-lg border border-border bg-butter px-3 py-2 text-xs leading-relaxed">
+              <svg viewBox="0 0 20 20" className="mt-px h-3.5 w-3.5 shrink-0 text-accent" fill="currentColor" aria-hidden>
+                <path d="M10 2 1 18h18L10 2Zm0 5.5c.5 0 .9.4.9.9v4.2a.9.9 0 0 1-1.8 0V8.4c0-.5.4-.9.9-.9Zm0 8.6a1.1 1.1 0 1 1 0-2.2 1.1 1.1 0 0 1 0 2.2Z" />
+              </svg>
+              {book.isMine ? (
+                <span>
+                  No photo of your copy yet. Readers see {book.images.length ? "the published cover" : "a placeholder"}.{" "}
+                  <Link href={`/books/${book.id}/edit`} className="font-medium text-brand underline-offset-2 hover:underline">
+                    Add a photo
+                  </Link>
+                </span>
+              ) : (
+                <span>
+                  {book.images.length ? "Published cover shown." : "No photo yet."} The owner hasn&apos;t added a photo of their
+                  copy, so ask about its condition before you meet.
+                </span>
+              )}
+            </p>
+          )}
+        </div>
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">

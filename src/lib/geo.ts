@@ -1,7 +1,9 @@
 // Location helpers. Exact coordinates stay on the server; other users only
 // ever see a neighbourhood name and a rounded distance.
 
-export const RADIUS_OPTIONS_KM = [1, 5, 10] as const;
+export const RADIUS_OPTIONS_KM = [1, 5, 10, 20] as const;
+/** Largest area the home page shows books from. */
+export const HOME_RADIUS_KM = 20;
 
 /** Round to 3 decimals (~110 m) before storing, so we never keep a precise fix. */
 export function coarsen(value: number): number {
